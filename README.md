@@ -10,8 +10,10 @@ CLI tool for API key and JWT lifecycle management with encrypted local store.
 - **Generate** API keys and JWTs with a single command
 - **Rotate** keys and tokens safely — previous values are hashed out
 - **Revoke** compromised keys instantly
+- **Verify** keys and JWTs against the keystore (valid/expired/revoked)
+- **Audit** keystore health — find expired and soon-to-expire keys
 - **List & search** keys by service
-- **Export** as environment variables (for CI/CD integration)
+- **Export** as environment variables or GitHub Actions format (for CI/CD integration)
 - **Encrypted local keystore** — AES-256-GCM, master key stored in `~/.apiauth/`
 - **CI/CD integration** — export keys for GitHub Actions, GitLab CI, etc.
 
@@ -71,6 +73,26 @@ apiauth export --format env --service "api-gateway"
 
 ```bash
 apiauth stats
+```
+
+### Verify a key or JWT
+
+```bash
+apiauth verify ak_your_key_here
+apiauth verify eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Audit keystore health
+
+```bash
+apiauth audit
+apiauth audit --days 14
+```
+
+### Export for GitHub Actions
+
+```bash
+apiauth export --format github-actions --service "api-gateway"
 ```
 
 ## Security

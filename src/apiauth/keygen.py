@@ -178,6 +178,68 @@ def rotate_key(
     }
 
 
+def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
+    """Verify a plaintext API key against the keystore.
+
+    Returns the entry metadata if the key hash matches and key is not revoked.
+    """
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    for kid, entry in keystore.get_all().items():
+        if entry.get("type") != "api_key":
+            continue
+        if entry.get("key_hash") == key_hash:
+            if entry.get("revoked"):
+                return {"id": kid, "status": "revoked", **entry}
+            # Check expiry
+            if entry.get("expires_at"):
+                from datetime import datetime
+                try:
+                    exp = datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
+                    if datetime.now(UTC) > exp:
+                        return {"id": kid, "status": "expired", **entry}
+                except (ValueError, TypeError):
+                    pass
+            return {"id": kid, "status": "valid", **entry}
+    return None
+
+
+def verify_jwt_token(keystore: Keystore, token: str) -> dict | None:
+    """Verify a JWT token by decoding it and matching the jti to the keystore.
+
+    Returns entry metadata if the JWT jti matches and key is not revoked.
+    """
+    import jwt as pyjwt
+
+    try:
+        # Decode without verification first to get the jti
+        unverified = pyjwt.decode(token, options={"verify_signature": False, "verify_exp": False})
+        jti = unverified.get("jti")
+    except Exception:
+        return None
+
+    if not jti:
+        return None
+
+    entry = keystore.get(jti)
+    if not entry or entry.get("type") != "jwt":
+        return None
+
+    if entry.get("revoked"):
+        return {"id": jti, "status": "revoked", **entry}
+
+    # Check expiry
+    if entry.get("expires_at"):
+        from datetime import datetime
+        try:
+            exp = datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
+            if datetime.now(UTC) > exp:
+                return {"id": jti, "status": "expired", **entry}
+        except (ValueError, TypeError):
+            pass
+
+    return {"id": jti, "status": "valid", **entry}
+
+
 def rotate_jwt(
     keystore: Keystore,
     key_id: str,
