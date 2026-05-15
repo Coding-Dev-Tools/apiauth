@@ -17,8 +17,9 @@ from apiauth.keygen import (
     generate_api_key,
     rotate_key,
     rotate_jwt,
+    verify_api_key,
+    verify_jwt_token,
 )
-from apiauth.verify import verify_api_key, check_expiry
 from apiauth.cli import cli
 
 
@@ -199,14 +200,14 @@ class TestRevoke:
         assert tmp_keystore.delete("nothing") is False
 
 
-class TestVerify:
+class TestVerifyAPIKey:
     def test_verify_valid_key(self, tmp_keystore):
         result = create_api_key_entry(tmp_keystore, "VerifyMe", "api")
         api_key = result["api_key"]
-
         v = verify_api_key(tmp_keystore, api_key)
-        assert v["valid"] is True
-        assert v["key_id"] == result["id"]
+        assert v is not None
+        assert v["status"] == "valid"
+        assert v["id"] == result["id"]
 
     def test_verify_revoked_key(self, tmp_keystore):
         result = create_api_key_entry(tmp_keystore, "RevokeMe", "api")
@@ -216,13 +217,12 @@ class TestVerify:
         tmp_keystore.put(result["id"], entry)
 
         v = verify_api_key(tmp_keystore, api_key)
-        assert v["valid"] is False
-        assert v["revoked"] is True
+        assert v is not None
+        assert v["status"] == "revoked"
 
     def test_verify_unknown_key(self, tmp_keystore):
         v = verify_api_key(tmp_keystore, "ak_totallyfake12345")
-        assert v["valid"] is False
-        assert v["key_id"] is None
+        assert v is None
 
     def test_verify_expired_key(self, tmp_keystore):
         result = create_api_key_entry(tmp_keystore, "Expired", "api", expiry_days=-1)
@@ -234,27 +234,31 @@ class TestVerify:
         tmp_keystore.put(result["id"], entry)
 
         v = verify_api_key(tmp_keystore, api_key)
-        assert v["valid"] is False
-        assert v["expired"] is True
+        assert v is not None
+        assert v["status"] == "expired"
 
 
-class TestCheckExpiry:
-    def test_no_expiry(self):
-        assert check_expiry({}) is None
+class TestVerifyJWT:
+    def test_verify_valid_jwt(self, tmp_keystore):
+        result = create_jwt_entry(tmp_keystore, "VerifyJWT", "auth")
+        token = result["token"]
+        v = verify_jwt_token(tmp_keystore, token)
+        assert v is not None
+        assert v["status"] == "valid"
 
-    def test_expired(self):
-        result = check_expiry({"expires_at": "2020-01-01T00:00:00Z"})
-        assert result == "expired"
+    def test_verify_revoked_jwt(self, tmp_keystore):
+        result = create_jwt_entry(tmp_keystore, "RevokedJWT", "auth")
+        entry = tmp_keystore.get(result["id"])
+        entry["revoked"] = True
+        tmp_keystore.put(result["id"], entry)
 
-    def test_not_expired(self):
-        result = check_expiry({"expires_at": "2099-01-01T00:00:00Z"})
-        assert result is None
+        v = verify_jwt_token(tmp_keystore, result["token"])
+        assert v is not None
+        assert v["status"] == "revoked"
 
-    def test_expiring_soon(self):
-        import datetime
-        soon = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).isoformat()[:23] + "Z"
-        result = check_expiry({"expires_at": soon})
-        assert result == "expiring"
+    def test_verify_invalid_jwt(self, tmp_keystore):
+        v = verify_jwt_token(tmp_keystore, "not.a.jwt")
+        assert v is None
 
 
 class TestCLIIntegration:
@@ -397,7 +401,8 @@ class TestCLIIntegration:
         # Reload keystore from disk to get CLI-written data
         ks_fresh = Keystore(tmp_keystore.key_dir)
         v = verify_api_key(ks_fresh, api_key)
-        assert v["valid"] is True
+        assert v is not None
+        assert v["status"] == "valid"
 
     def test_export_env(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "ExportKey", "api-gateway")
