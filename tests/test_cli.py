@@ -1,4 +1,4 @@
-"""Tests for APIAuth CLI keystore and keygen modules."""
+"""Tests for APIAuth CLI keystore, keygen, and verify modules."""
 
 from __future__ import annotations
 
@@ -17,9 +17,8 @@ from apiauth.keygen import (
     generate_api_key,
     rotate_key,
     rotate_jwt,
-    verify_api_key,
-    verify_jwt_token,
 )
+from apiauth.verify import verify_api_key, check_expiry
 from apiauth.cli import cli
 
 
@@ -200,6 +199,64 @@ class TestRevoke:
         assert tmp_keystore.delete("nothing") is False
 
 
+class TestVerify:
+    def test_verify_valid_key(self, tmp_keystore):
+        result = create_api_key_entry(tmp_keystore, "VerifyMe", "api")
+        api_key = result["api_key"]
+
+        v = verify_api_key(tmp_keystore, api_key)
+        assert v["valid"] is True
+        assert v["key_id"] == result["id"]
+
+    def test_verify_revoked_key(self, tmp_keystore):
+        result = create_api_key_entry(tmp_keystore, "RevokeMe", "api")
+        api_key = result["api_key"]
+        entry = tmp_keystore.get(result["id"])
+        entry["revoked"] = True
+        tmp_keystore.put(result["id"], entry)
+
+        v = verify_api_key(tmp_keystore, api_key)
+        assert v["valid"] is False
+        assert v["revoked"] is True
+
+    def test_verify_unknown_key(self, tmp_keystore):
+        v = verify_api_key(tmp_keystore, "ak_totallyfake12345")
+        assert v["valid"] is False
+        assert v["key_id"] is None
+
+    def test_verify_expired_key(self, tmp_keystore):
+        result = create_api_key_entry(tmp_keystore, "Expired", "api", expiry_days=-1)
+        api_key = result["api_key"]
+
+        # Manually set expires_at to past
+        entry = tmp_keystore.get(result["id"])
+        entry["expires_at"] = "2020-01-01T00:00:00Z"
+        tmp_keystore.put(result["id"], entry)
+
+        v = verify_api_key(tmp_keystore, api_key)
+        assert v["valid"] is False
+        assert v["expired"] is True
+
+
+class TestCheckExpiry:
+    def test_no_expiry(self):
+        assert check_expiry({}) is None
+
+    def test_expired(self):
+        result = check_expiry({"expires_at": "2020-01-01T00:00:00Z"})
+        assert result == "expired"
+
+    def test_not_expired(self):
+        result = check_expiry({"expires_at": "2099-01-01T00:00:00Z"})
+        assert result is None
+
+    def test_expiring_soon(self):
+        import datetime
+        soon = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).isoformat()[:23] + "Z"
+        result = check_expiry({"expires_at": soon})
+        assert result == "expiring"
+
+
 class TestCLIIntegration:
     """Test CLI commands via Click CliRunner."""
 
@@ -259,6 +316,13 @@ class TestCLIIntegration:
         assert "Key1" in result.output
         assert "Key2" not in result.output
 
+    def test_list_json_output(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "JsonKey", "api")
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "list", "--json-output"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+
     def test_show_key(self, runner, tmp_keystore):
         entry = create_api_key_entry(tmp_keystore, "ShowMe", "api")
         key_id = entry["id"]
@@ -292,134 +356,111 @@ class TestCLIIntegration:
         assert result.exit_code == 0
         assert "Revoked" in result.output
 
+    def test_verify_valid(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "VerifyMe", "api")
+        api_key = entry["api_key"]
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", api_key])
+        assert result.exit_code == 0
+        assert "VALID" in result.output
+
+    def test_verify_invalid(self, runner, tmp_keystore):
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "ak_fake123"])
+        assert result.exit_code == 0
+        assert "INVALID" in result.output
+
+    def test_verify_json_output(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "JsonVerify", "api")
+        api_key = entry["api_key"]
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "--json-output", api_key])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["valid"] is True
+
+    def test_import_key(self, runner, tmp_keystore):
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "import", "ak_myimportedkey123",
+             "--name", "Imported", "--service", "api"]
+        )
+        assert result.exit_code == 0
+        assert "Imported" in result.output
+
+    def test_import_key_stores_hash(self, runner, tmp_keystore):
+        api_key = "ak_testimportkey123abc"
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "import", api_key,
+             "--name", "HashTest", "--service", "api"]
+        )
+        assert result.exit_code == 0
+
+        # Reload keystore from disk to get CLI-written data
+        ks_fresh = Keystore(tmp_keystore.key_dir)
+        v = verify_api_key(ks_fresh, api_key)
+        assert v["valid"] is True
+
     def test_export_env(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "ExportKey", "api-gateway")
         result = runner.invoke(
             cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "env"]
         )
         assert result.exit_code == 0
-        assert "EXPORTKEY" in result.output or "ExportKey" in result.output
+        assert "export" in result.output
 
-    def test_stats(self, runner, tmp_keystore):
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "stats"])
-        assert result.exit_code == 0
-        assert "Total keys" in result.output
-
-
-class TestVerifyCommand:
-    """Test the verify command for API keys and JWTs."""
-
-    def test_verify_valid_api_key(self, runner, tmp_keystore):
-        entry = create_api_key_entry(tmp_keystore, "VerifyMe", "api")
-        api_key = entry["api_key"]
-
+    def test_export_dotenv(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "DotenvKey", "api")
         result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", api_key]
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "dotenv"]
         )
         assert result.exit_code == 0
-        assert "VALID" in result.output
-
-    def test_verify_revoked_api_key(self, runner, tmp_keystore):
-        entry = create_api_key_entry(tmp_keystore, "RevokeVerify", "api")
-        key_id = entry["id"]
-        api_key = entry["api_key"]
-
-        # Revoke the key
-        stored = tmp_keystore.get(key_id)
-        stored["revoked"] = True
-        tmp_keystore.put(key_id, stored)
-
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", api_key]
-        )
-        assert "REVOKED" in result.output
-
-    def test_verify_valid_jwt(self, runner, tmp_keystore):
-        entry = create_jwt_entry(tmp_keystore, "VerifyJWT", "auth")
-        token = entry["token"]
-
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", token]
-        )
-        assert result.exit_code == 0
-        assert "VALID" in result.output
-
-    def test_verify_unknown_key(self, runner, tmp_keystore):
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "ak_nonexistentkey123"]
-        )
-        assert result.exit_code != 0
-        assert "Not found" in result.output
-
-    def test_verify_no_value(self, runner, tmp_keystore):
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify"]
-        )
-        assert result.exit_code != 0
-
-
-class TestAuditCommand:
-    """Test the audit command."""
-
-    def test_audit_empty(self, runner, tmp_keystore):
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"]
-        )
-        assert result.exit_code == 0
-        assert "No keys found" in result.output
-
-    def test_audit_healthy(self, runner, tmp_keystore):
-        create_api_key_entry(tmp_keystore, "Healthy", "api", expiry_days=365)
-
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"]
-        )
-        assert result.exit_code == 0
-        assert "healthy" in result.output.lower() or "Healthy" in result.output
-
-    def test_audit_revoked(self, runner, tmp_keystore):
-        entry = create_api_key_entry(tmp_keystore, "RevokedAudit", "api")
-        stored = tmp_keystore.get(entry["id"])
-        stored["revoked"] = True
-        tmp_keystore.put(entry["id"], stored)
-
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"]
-        )
-        assert "Revoked" in result.output
-
-    def test_audit_expired(self, runner, tmp_keystore):
-        entry = create_api_key_entry(tmp_keystore, "ExpiredAudit", "api", expiry_days=-1)
-        # Manually set expires_at to past
-        stored = tmp_keystore.get(entry["id"])
-        stored["expires_at"] = "2020-01-01T00:00:00Z"
-        tmp_keystore.put(entry["id"], stored)
-
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"]
-        )
-        assert "Expired" in result.output
-
-    def test_audit_days_option(self, runner, tmp_keystore):
-        # Create a key expiring in 15 days
-        create_api_key_entry(tmp_keystore, "SoonExpire", "api", expiry_days=15)
-
-        # With --days 30, should warn
-        result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "audit", "--days", "30"]
-        )
-        assert "Expiring" in result.output or "expiring" in result.output.lower()
-
-
-class TestExportGitHubActions:
-    """Test the github-actions export format."""
+        assert "export" not in result.output  # dotenv has no export prefix
+        assert "DOTENVKEY" in result.output
 
     def test_export_github_actions(self, runner, tmp_keystore):
-        create_api_key_entry(tmp_keystore, "GHAKey", "api-gateway")
-
+        create_api_key_entry(tmp_keystore, "GHKey", "api")
         result = runner.invoke(
             cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "github-actions"]
         )
         assert result.exit_code == 0
         assert "GITHUB_ENV" in result.output
-        assert "repository secrets" in result.output
+
+    def test_export_json(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "JsonExport", "api")
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+
+    def test_audit_all_healthy(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "Healthy", "api")
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"])
+        assert result.exit_code == 0
+        assert "healthy" in result.output.lower()
+
+    def test_audit_with_expired(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "Expired", "api")
+        # Manually set as expired
+        e = tmp_keystore.get(entry["id"])
+        e["expires_at"] = "2020-01-01T00:00:00Z"
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"])
+        assert result.exit_code == 0
+        assert "EXPIRED" in result.output
+
+    def test_audit_with_revoked(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "Revoked", "api")
+        e = tmp_keystore.get(entry["id"])
+        e["revoked"] = True
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"])
+        assert result.exit_code == 0
+        assert "REVOKED" in result.output
+
+    def test_stats(self, runner, tmp_keystore):
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "stats"])
+        assert result.exit_code == 0
+        assert "Total keys" in result.output

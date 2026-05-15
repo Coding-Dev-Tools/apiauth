@@ -8,12 +8,13 @@ CLI tool for API key and JWT lifecycle management with encrypted local store.
 ## Features
 
 - **Generate** API keys and JWTs with a single command
+- **Import** existing API keys into the encrypted keystore
+- **Verify** API keys against stored hashes — check revocation and expiry
 - **Rotate** keys and tokens safely — previous values are hashed out
 - **Revoke** compromised keys instantly
-- **Verify** keys and JWTs against the keystore (valid/expired/revoked)
-- **Audit** keystore health — find expired and soon-to-expire keys
-- **List & search** keys by service
-- **Export** as environment variables or GitHub Actions format (for CI/CD integration)
+- **List & search** keys by service with expiry status indicators
+- **Export** as environment variables, dotenv, JSON, or GitHub Actions format
+- **Audit** keystore for expired, expiring, and revoked keys
 - **Encrypted local keystore** — AES-256-GCM, master key stored in `~/.apiauth/`
 - **CI/CD integration** — export keys for GitHub Actions, GitLab CI, etc.
 
@@ -23,77 +24,56 @@ CLI tool for API key and JWT lifecycle management with encrypted local store.
 pip install apiauth
 ```
 
-## Usage
-
-### Generate an API key
+## Quick Start
 
 ```bash
+# Generate an API key
 apiauth generate api-key --name "My API Key" --service "api-gateway" --expiry-days 90
-```
 
-### Generate a JWT
+# Generate a JWT
+apiauth generate jwt --name "My JWT" --service "auth-service" --expiry-days 30 --claim role=admin
 
-```bash
-apiauth generate jwt --name "My JWT" --service "auth-service" --expiry-days 30
-```
-
-### List all keys
-
-```bash
+# List all keys (with expiry status)
 apiauth list
 apiauth list --service "api-gateway"
 apiauth list --json-output
-```
 
-### Show key details
-
-```bash
+# Show key details
 apiauth show <key-id>
-```
 
-### Rotate a key
+# Verify an API key
+apiauth verify ak_xYz123abc...
 
-```bash
+# Import an existing key
+apiauth import ak_existing_key_value --name "Legacy Key" --service "api"
+
+# Rotate a key
 apiauth rotate <key-id>
-```
 
-### Revoke a key
-
-```bash
+# Revoke a key
 apiauth revoke <key-id>
-```
 
-### Export for CI/CD
-
-```bash
+# Export for CI/CD
 apiauth export --format env --service "api-gateway"
-```
+apiauth export --format dotenv
+apiauth export --format github-actions
+apiauth export --format json
 
-### View keystore stats
+# Audit keystore health
+apiauth audit
 
-```bash
+# View keystore stats
 apiauth stats
 ```
 
-### Verify a key or JWT
+## Export Formats
 
-```bash
-apiauth verify ak_your_key_here
-apiauth verify eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Audit keystore health
-
-```bash
-apiauth audit
-apiauth audit --days 14
-```
-
-### Export for GitHub Actions
-
-```bash
-apiauth export --format github-actions --service "api-gateway"
-```
+| Format | Use Case |
+|--------|----------|
+| `env` | Shell source scripts (`export KEY=value`) |
+| `dotenv` | `.env` files (no `export` prefix) |
+| `github-actions` | `$GITHUB_ENV` and workflow YAML |
+| `json` | Programmatic consumption |
 
 ## Security
 
@@ -101,6 +81,8 @@ apiauth export --format github-actions --service "api-gateway"
 - Key store is encrypted with AES-256-GCM
 - Plaintext keys are only displayed once on creation
 - Rotated keys have their previous values hashed
+- Imported keys are stored as SHA-256 hashes only
+- `verify` command checks against stored hashes — no plaintext stored
 
 ## License
 
