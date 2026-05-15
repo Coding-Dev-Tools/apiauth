@@ -262,25 +262,21 @@ def verify(ctx: click.Context, api_key: str, json_output: bool) -> None:
         console.print(json.dumps(result, indent=2, default=str))
         return
 
-    if result["valid"]:
-        console.print(f"[green]✓[/green] Key [bold]{result['key_id']}[/bold] is [green]VALID[/green]")
+    if result is None:
+        console.print("[red]✗[/red] Key is [red]INVALID[/red]")
+        console.print("  Key not found in keystore")
+        return
+
+    status = result.get("status", "unknown")
+    if status == "valid":
+        console.print(f"[green]✓[/green] Key [bold]{result['id']}[/bold] is [green]VALID[/green]")
         console.print(f"  Name: {result.get('name', '')}")
         console.print(f"  Service: {result.get('service', '')}")
         console.print(f"  Version: {result.get('version', '?')}")
         if result.get("rate_limit"):
             console.print(f"  Rate limit: {result['rate_limit']} req/s")
     else:
-        console.print(f"[red]✗[/red] Key is [red]INVALID[/red]")
-        if result.get("key_id"):
-            reasons = []
-            if result.get("revoked"):
-                reasons.append("revoked")
-            if result.get("expired"):
-                reasons.append("expired")
-            console.print(f"  Key ID: {result['key_id']}")
-            console.print(f"  Reason: {', '.join(reasons) if reasons else 'key hash mismatch'}")
-        else:
-            console.print("  Key not found in keystore")
+        console.print(f"[red]✗[/red] Key [bold]{result['id']}[/bold] is [red]{status.upper()}[/red]")
 
 
 # ── import ────────────────────────────────────────────────────────────

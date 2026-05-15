@@ -20,6 +20,7 @@ from apiauth.keygen import (
     verify_api_key,
     verify_jwt_token,
 )
+from apiauth.verify import check_expiry
 from apiauth.cli import cli
 
 
@@ -204,6 +205,7 @@ class TestVerifyAPIKey:
     def test_verify_valid_key(self, tmp_keystore):
         result = create_api_key_entry(tmp_keystore, "VerifyMe", "api")
         api_key = result["api_key"]
+
         v = verify_api_key(tmp_keystore, api_key)
         assert v is not None
         assert v["status"] == "valid"
@@ -242,12 +244,13 @@ class TestVerifyJWT:
     def test_verify_valid_jwt(self, tmp_keystore):
         result = create_jwt_entry(tmp_keystore, "VerifyJWT", "auth")
         token = result["token"]
+
         v = verify_jwt_token(tmp_keystore, token)
         assert v is not None
         assert v["status"] == "valid"
 
     def test_verify_revoked_jwt(self, tmp_keystore):
-        result = create_jwt_entry(tmp_keystore, "RevokedJWT", "auth")
+        result = create_jwt_entry(tmp_keystore, "RevokeJWT", "auth")
         entry = tmp_keystore.get(result["id"])
         entry["revoked"] = True
         tmp_keystore.put(result["id"], entry)
@@ -261,13 +264,32 @@ class TestVerifyJWT:
         assert v is None
 
 
+class TestCheckExpiry:
+    def test_no_expiry(self):
+        assert check_expiry({}) is None
+
+    def test_expired(self):
+        result = check_expiry({"expires_at": "2020-01-01T00:00:00Z"})
+        assert result == "expired"
+
+    def test_not_expired(self):
+        result = check_expiry({"expires_at": "2099-01-01T00:00:00Z"})
+        assert result is None
+
+    def test_expiring_soon(self):
+        import datetime
+        soon = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).isoformat()[:23] + "Z"
+        result = check_expiry({"expires_at": soon})
+        assert result == "expiring"
+
+
 class TestCLIIntegration:
     """Test CLI commands via Click CliRunner."""
 
     def test_version(self, runner):
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "version" in result.output.lower() or "0.1.0" in result.output
+        assert "version" in result.output.lower() or "0.2.0" in result.output
 
     def test_help(self, runner):
         result = runner.invoke(cli, ["--help"])
@@ -300,7 +322,6 @@ class TestCLIIntegration:
         assert "JWT" in result.output
 
     def test_list_keys(self, runner, tmp_keystore):
-        # Pre-populate
         create_api_key_entry(tmp_keystore, "Key1", "svc1")
         create_jwt_entry(tmp_keystore, "Token1", "svc2")
 
@@ -380,7 +401,7 @@ class TestCLIIntegration:
         result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "--json-output", api_key])
         assert result.exit_code == 0
         data = json.loads(result.output)
-        assert data["valid"] is True
+        assert data["status"] == "valid"
 
     def test_import_key(self, runner, tmp_keystore):
         result = runner.invoke(
@@ -446,7 +467,6 @@ class TestCLIIntegration:
 
     def test_audit_with_expired(self, runner, tmp_keystore):
         entry = create_api_key_entry(tmp_keystore, "Expired", "api")
-        # Manually set as expired
         e = tmp_keystore.get(entry["id"])
         e["expires_at"] = "2020-01-01T00:00:00Z"
         tmp_keystore.put(entry["id"], e)
