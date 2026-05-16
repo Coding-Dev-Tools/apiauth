@@ -24,6 +24,13 @@ from apiauth.verify import check_expiry
 from apiauth.cli import cli
 
 
+def _extract_json(text: str) -> str:
+    """Extract JSON array or object from output that may have stderr mixed in."""
+    import re
+    match = re.search(r'(\[.*\]|\{.*\})', text.strip(), re.DOTALL)
+    return match.group(1) if match else text
+
+
 @pytest.fixture
 def runner():
     """Provide a Click CliRunner."""
@@ -345,7 +352,7 @@ class TestCLIIntegration:
         create_api_key_entry(tmp_keystore, "JsonKey", "api")
         result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "list", "--json-output"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(_extract_json(result.output))
         assert isinstance(data, list)
 
     def test_show_key(self, runner, tmp_keystore):
@@ -400,7 +407,7 @@ class TestCLIIntegration:
 
         result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "--json-output", api_key])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(_extract_json(result.output))
         assert data["status"] == "valid"
 
     def test_import_key(self, runner, tmp_keystore):
@@ -456,7 +463,7 @@ class TestCLIIntegration:
             cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "json"]
         )
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(_extract_json(result.output))
         assert isinstance(data, list)
 
     def test_audit_all_healthy(self, runner, tmp_keystore):
