@@ -1,5 +1,7 @@
 # APIAuth
 
+[![GitHub stars](https://img.shields.io/github/stars/Coding-Dev-Tools/apiauth?style=social)](https://github.com/Coding-Dev-Tools/apiauth/stargazers)
+
 **CLI tool for API key and JWT lifecycle management — generate, store, verify, rotate, and revoke keys with an encrypted local keystore.**
 
 [![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml)
