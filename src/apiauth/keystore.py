@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import time
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pathlib import Path
 from typing import Any
-
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 _DEFAULT_KEY_DIR = Path.home() / ".apiauth"
 _KEY_FILE = "master.key"

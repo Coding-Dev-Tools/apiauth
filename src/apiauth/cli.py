@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import click
 import json
 import sys
-from pathlib import Path
-from typing import Any
-
-import click
 from rich.console import Console
 from rich.table import Table
+from typing import Any
 
 from . import __version__
+from .keygen import create_api_key_entry, create_jwt_entry, rotate_jwt, rotate_key
 from .keystore import Keystore
-from .keygen import create_api_key_entry, create_jwt_entry, rotate_key, rotate_jwt
-from .verify import verify_api_key, check_expiry
+from .verify import check_expiry, verify_api_key
+
+try:
+    from revenueholdings_license import require_license
+except ImportError:
+    def require_license(tool):
+        def decorator(func):
+            return func
+        return decorator
 
 console = Console()
 err_console = Console(stderr=True)
@@ -68,7 +74,7 @@ def generate_api_key_cmd(
         console.print(f"  Expires: {result['expires_at']}")
     if result.get("rate_limit"):
         console.print(f"  Rate limit: {result['rate_limit']} req/s")
-    console.print(f"  [dim]Save this key — it won't be shown again.[/dim]")
+    console.print(" [dim]Save this key -- it won't be shown again.[/dim]")
 
 
 @generate.command("jwt")
@@ -101,7 +107,7 @@ def generate_jwt_cmd(
     console.print(f"  Service: {result['service']}")
     if result.get("expires_at"):
         console.print(f"  Expires: {result['expires_at']}")
-    console.print(f"  [dim]Save this token — it won't be shown again.[/dim]")
+    console.print(" [dim]Save this token -- it won't be shown again.[/dim]")
 
 
 # ── list ──────────────────────────────────────────────────────────────
@@ -207,10 +213,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
 
     key_type = entry.get("type", "api_key")
 
-    if key_type == "jwt":
-        result = rotate_jwt(ks, key_id, expiry_days or 30)
-    else:
-        result = rotate_key(ks, key_id, expiry_days)
+    result = rotate_jwt(ks, key_id, expiry_days or 30) if key_type == "jwt" else rotate_key(ks, key_id, expiry_days)
 
     if not result:
         err_console.print(f"[red]Failed to rotate '{key_id}'.[/red]")
@@ -221,7 +224,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
         console.print(f"  New token: [bold yellow]{result['token']}[/bold yellow]")
     else:
         console.print(f"  New key: [bold yellow]{result['api_key']}[/bold yellow]")
-    console.print(f"  [dim]Previous value has been hashed out. Save the new value.[/dim]")
+    console.print("  [dim]Previous value has been hashed out. Save the new value.[/dim]")
 
 
 # ── revoke ────────────────────────────────────────────────────────────
@@ -338,7 +341,7 @@ def import_key(
     console.print(f"[green]✓[/green] Imported key [bold]{key_id}[/bold]")
     console.print(f"  Name: {name}")
     console.print(f"  Service: {service}")
-    console.print(f"  [dim]Key has been hashed. Use 'verify' to check keys.[/dim]")
+    console.print("  [dim]Key has been hashed. Use 'verify' to check keys.[/dim]")
 
 
 # ── export ────────────────────────────────────────────────────────────

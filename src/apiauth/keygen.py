@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import datetime
 import hashlib
-import json
-import os
 import secrets
 import uuid
 
 UTC = datetime.timezone.utc
 
-from .keystore import Keystore
+from .keystore import Keystore  # noqa: E402
 
 
 def generate_api_key(prefix: str = "ak", byte_length: int = 32) -> str:

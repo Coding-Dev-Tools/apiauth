@@ -7,7 +7,7 @@ import datetime
 UTC = datetime.timezone.utc
 
 # Re-export verify functions from keygen for backward compatibility
-from .keygen import verify_api_key, verify_jwt_token  # noqa: F401
+from .keygen import verify_api_key, verify_jwt_token  # noqa: F401, E402
 
 
 def check_expiry(entry: dict) -> str | None:
