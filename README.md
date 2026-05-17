@@ -1,15 +1,14 @@
-# APIAuth
+﻿# APIAuth
 
-**CLI tool for API key and JWT lifecycle management — generate, store, verify, rotate, and revoke keys with an encrypted local keystore.**
+[![GitHub stars](https://img.shields.io/github/stars/Coding-Dev-Tools/apiauth?style=social)](https://github.com/Coding-Dev-Tools/apiauth/stargazers)
+
+**CLI tool for API key and JWT lifecycle management â€” generate, store, verify, rotate, and revoke keys with an encrypted local keystore.**
 
 [![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
-[![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
-[![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
-[![Awesome Python](https://img.shields.io/badge/Awesome_Python-%E2%87%92-blue?logo=python)](https://github.com/uhub/awesome-python)
 
-**Why APIAuth?**
+**Why APIAuth?** API keys proliferate in every codebase â€” staging keys, prod keys, third-party service keys, JWT secrets for auth. Most teams store them in `.env` files, spreadsheets, or chat history. When a key is compromised, tracking down everywhere it was used and rotating it is a manual nightmare. APIAuth gives you a single encrypted keystore with full lifecycle management: generate, import, list, verify, rotate, revoke, and export â€” all from your terminal.
 
 ## Quick Start
 
@@ -30,14 +29,14 @@ apiauth export --format github-actions
 
 - **Generate** API keys and JWTs with a single command
 - **Import** existing API keys into the encrypted keystore
-- **Verify** API keys against stored hashes — check revocation and expiry
-- **Rotate** keys and tokens safely — previous values are hashed out
+- **Verify** API keys against stored hashes â€” check revocation and expiry
+- **Rotate** keys and tokens safely â€” previous values are hashed out
 - **Revoke** compromised keys instantly
 - **List & search** keys by service with expiry status indicators
 - **Export** as environment variables, dotenv, JSON, or GitHub Actions format
 - **Audit** keystore for expired, expiring, and revoked keys
-- **Encrypted local keystore** — AES-256-GCM, master key stored in `~/.apiauth/`
-- **CI/CD integration** — export keys for GitHub Actions, GitLab CI, etc.
+- **Encrypted local keystore** â€” AES-256-GCM, master key stored in `~/.apiauth/`
+- **CI/CD integration** â€” export keys for GitHub Actions, GitLab CI, etc.
 
 ## Commands
 
@@ -143,7 +142,7 @@ apiauth stats
 - Plaintext keys are only displayed once on creation
 - Rotated keys have their previous values hashed
 - Imported keys are stored as SHA-256 hashes only
-- `verify` command checks against stored hashes — no plaintext stored
+- `verify` command checks against stored hashes â€” no plaintext stored
 
 ## Pricing
 
@@ -151,42 +150,42 @@ APIAuth is one of eight tools in the Revenue Holdings suite. One license covers 
 
 | Plan | Price | Best For |
 |------|-------|----------|
-| **Free** | $0 | Individual devs, OSS — CLI only, 5 keys |
-| **APIAuth Individual** | **$12/mo** ($10 billed annually) | Professional devs — unlimited keys, all export formats |
-| **Suite (all 8 tools)** | **$49/mo** ($39 billed annually) | Full Revenue Holdings toolkit — 40% savings |
-| **Team** | **$79/mo** ($63 billed annually) | Up to 5 devs — shared keystore, team dashboard, alerts |
+| **Free** | $0 | Individual devs, OSS â€” CLI only, 5 keys |
+| **APIAuth Individual** | **$12/mo** ($10 billed annually) | Professional devs â€” unlimited keys, all export formats |
+| **Suite (all 8 tools)** | **$49/mo** ($39 billed annually) | Full Revenue Holdings toolkit â€” 40% savings |
+| **Team** | **$79/mo** ($63 billed annually) | Up to 5 devs â€” shared keystore, team dashboard, alerts |
 | **Enterprise** | Custom | SSO, RBAC, compliance reports, dedicated support |
 
-🔹 **No lock-in**: CLI works fully offline on the free tier — no telemetry, no phone-home.
-🔹 **Annual billing**: Save 20%.
+ðŸ”¹ **No lock-in**: CLI works fully offline on the free tier â€” no telemetry, no phone-home.
+ðŸ”¹ **Annual billing**: Save 20%.
 
 ### Per-Tier Features
 
 | Feature | Free | Individual | Suite | Team | Enterprise |
 |---------|:----:|:----------:|:-----:|:----:|:----------:|
-| CLI: generate, verify, export | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Unlimited keys | 5 keys | ✓ | ✓ | ✓ | ✓ |
-| All export formats | `env` only | ✓ | ✓ | ✓ | ✓ |
-| JWT with custom claims | — | ✓ | ✓ | ✓ | ✓ |
-| Audit & stats | — | ✓ | ✓ | ✓ | ✓ |
-| Shared team keystore | — | — | — | ✓ | ✓ |
-| Dashboard & analytics | — | — | — | ✓ | ✓ |
-| Compliance reports | — | — | — | — | ✓ |
-| RBAC / SSO / SAML / OIDC | — | — | — | — | ✓ |
+| CLI: generate, verify, export | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
+| Unlimited keys | 5 keys | âœ“ | âœ“ | âœ“ | âœ“ |
+| All export formats | `env` only | âœ“ | âœ“ | âœ“ | âœ“ |
+| JWT with custom claims | â€” | âœ“ | âœ“ | âœ“ | âœ“ |
+| Audit & stats | â€” | âœ“ | âœ“ | âœ“ | âœ“ |
+| Shared team keystore | â€” | â€” | â€” | âœ“ | âœ“ |
+| Dashboard & analytics | â€” | â€” | â€” | âœ“ | âœ“ |
+| Compliance reports | â€” | â€” | â€” | â€” | âœ“ |
+| RBAC / SSO / SAML / OIDC | â€” | â€” | â€” | â€” | âœ“ |
 | Priority support | Community | 24h | 24h | 8h | Dedicated |
 
 ---
 
 <p align="center">
-  <sub>Part of <a href="https://coding-dev-tools.github.io/revenueholdings.dev/">Revenue Holdings</a> — CLI tools built by autonomous AI.</sub>
+  <sub>Part of <a href="https://coding-dev-tools.github.io/revenueholdings.dev/">Revenue Holdings</a> â€” CLI tools built by autonomous AI.</sub>
 </p>
 
 ## Storage
 
 Keys and configuration are stored in `~/.apiauth/`:
-- `~/.apiauth/master.key` — AES-256-GCM master key (never shared)
-- `~/.apiauth/keystore.enc` — encrypted key-value store
-- `~/.apiauth/config.yaml` — user configuration
+- `~/.apiauth/master.key` â€” AES-256-GCM master key (never shared)
+- `~/.apiauth/keystore.enc` â€” encrypted key-value store
+- `~/.apiauth/config.yaml` â€” user configuration
 
 ## CI/CD Integration
 
@@ -209,8 +208,9 @@ apiauth audit --exit-on-expired
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT â€” see [LICENSE](LICENSE)
 
 ---
 
-<sub>Part of [Revenue Holdings](https://coding-dev-tools.github.io/revenueholdings.dev/) — a suite of 10 developer CLI tools built by autonomous AI agents. Also check out [API Contract Guardian](https://github.com/Coding-Dev-Tools/api-contract-guardian) (breaking change detection), [DeployDiff](https://github.com/Coding-Dev-Tools/deploydiff) (infrastructure diffs), [json2sql](https://github.com/Coding-Dev-Tools/json2sql) (JSON → SQL), [ConfigDrift](https://github.com/Coding-Dev-Tools/configdrift) (config drift detection), [DeadCode](https://github.com/Coding-Dev-Tools/deadcode) (dead code cleanup), [APIGhost](https://github.com/Coding-Dev-Tools/apighost) (mock API server), [Envault](https://github.com/Coding-Dev-Tools/envault) (env sync), [SchemaForge](https://github.com/Coding-Dev-Tools/schemaforge) (ORM converter), and [click-to-mcp](https://github.com/Coding-Dev-Tools/click-to-mcp) (CLI → MCP server).</sub>
+<sub>Part of [Revenue Holdings](https://coding-dev-tools.github.io/revenueholdings.dev/) â€” a suite of 10 developer CLI tools built by autonomous AI agents. Also check out [API Contract Guardian](https://github.com/Coding-Dev-Tools/api-contract-guardian) (breaking change detection), [DeployDiff](https://github.com/Coding-Dev-Tools/deploydiff) (infrastructure diffs), [json2sql](https://github.com/Coding-Dev-Tools/json2sql) (JSON â†’ SQL), [ConfigDrift](https://github.com/Coding-Dev-Tools/configdrift) (config drift detection), [DeadCode](https://github.com/Coding-Dev-Tools/deadcode) (dead code cleanup), [APIGhost](https://github.com/Coding-Dev-Tools/apighost) (mock API server), [Envault](https://github.com/Coding-Dev-Tools/envault) (env sync), [SchemaForge](https://github.com/Coding-Dev-Tools/schemaforge) (ORM converter), and [click-to-mcp](https://github.com/Coding-Dev-Tools/click-to-mcp) (CLI â†’ MCP server).</sub>
+
