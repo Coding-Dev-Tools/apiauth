@@ -30,8 +30,12 @@ def cli(ctx: click.Context, key_dir: str | None) -> None:
     Generate, rotate, and manage API keys and JWTs with an
     AES-256-GCM encrypted local keystore.
     """
-    from revenueholdings_license import require_license
-    require_license("apiauth")
+    try:
+        from revenueholdings_license import require_license
+        require_license("apiauth")
+    except ImportError:
+        import warnings
+        warnings.warn("revenueholdings-license not installed; license checks skipped", stacklevel=2)
     ctx.ensure_object(dict)
     ctx.obj["keystore"] = Keystore(key_dir)
 

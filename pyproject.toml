@@ -29,7 +29,6 @@ dependencies = [
     "pyjwt>=2.8.0",
     "rich>=13.0.0",
     "python-dateutil>=2.8.0",
-    "revenueholdings-license>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +38,7 @@ dev = [
     "httpx>=0.27.0",
     "freezegun>=1.2.0",
 ]
+license = ["revenueholdings-license>=0.1.0"]
 
 [project.scripts]
 apiauth = "apiauth.cli:cli"
