@@ -5,8 +5,11 @@
 [![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
+[![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
+[![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
+[![Awesome Python](https://img.shields.io/badge/Awesome_Python-%E2%87%92-blue?logo=python)](https://github.com/uhub/awesome-python)
 
-**Why APIAuth?** API keys proliferate in every codebase — staging keys, prod keys, third-party service keys, JWT secrets for auth. Most teams store them in `.env` files, spreadsheets, or chat history. When a key is compromised, tracking down everywhere it was used and rotating it is a manual nightmare. APIAuth gives you a single encrypted keystore with full lifecycle management: generate, import, list, verify, rotate, revoke, and export — all from your terminal.
+**Why APIAuth?**
 
 ## Quick Start
 
