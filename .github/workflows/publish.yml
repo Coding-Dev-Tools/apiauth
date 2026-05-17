@@ -30,8 +30,8 @@ jobs:
       - name: Build package
         run: python -m build
 
-- name: Check package
-  run: pip install twine && twine check dist/*
+      - name: Check package
+        run: pip install twine && twine check dist/*
 
-- name: Publish to PyPI
-  uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
