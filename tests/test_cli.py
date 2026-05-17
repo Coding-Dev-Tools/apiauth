@@ -4,24 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import tempfile
-from pathlib import Path
-
 import pytest
-
-from apiauth.keystore import Keystore
+import tempfile
+from apiauth.cli import cli
 from apiauth.keygen import (
     create_api_key_entry,
     create_jwt_entry,
     generate_api_key,
-    rotate_key,
     rotate_jwt,
+    rotate_key,
     verify_api_key,
     verify_jwt_token,
 )
+from apiauth.keystore import Keystore
 from apiauth.verify import check_expiry
-from apiauth.cli import cli
 
 
 @pytest.fixture
@@ -103,7 +99,7 @@ class TestKeystore:
         key_path = tmp_keystore.key_dir / "master.key"
         first_mtime = key_path.stat().st_mtime
 
-        ks2 = Keystore(tmp_keystore.key_dir)
+        Keystore(tmp_keystore.key_dir)
         assert key_path.stat().st_mtime == first_mtime  # Not overwritten
 
 

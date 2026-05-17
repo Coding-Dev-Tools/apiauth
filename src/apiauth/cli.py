@@ -472,7 +472,11 @@ def audit(ctx: click.Context) -> None:
     if expiring:
         console.print(f"[yellow]⚠ {len(expiring)} EXPIRING key(s) (within 7 days):[/yellow]")
         for k in expiring:
-            console.print(f"  [yellow]{k['id']}[/yellow] {k.get('name', '')} — expires {_short_ts(k.get('expires_at', ''))}")
+            console.print(
+                f"  [yellow]{k['id']}[/yellow] "
+                f"{k.get('name', '')} — expires "
+                f"{_short_ts(k.get('expires_at', ''))}"
+            )
         console.print()
 
     if revoked:
