@@ -34,7 +34,7 @@ jobs:
 
   publish:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.PYPI_API_TOKEN != ''
     runs-on: ubuntu-latest
     permissions:
       id-token: write
