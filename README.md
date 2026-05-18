@@ -4,7 +4,7 @@
 
 **CLI tool for API key and JWT lifecycle management — generate, store, verify, rotate, and revoke keys with an encrypted local keystore.**
 
-[![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/test.yml)
+[![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/ci.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
 [![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
