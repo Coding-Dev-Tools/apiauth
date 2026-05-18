@@ -4,16 +4,15 @@
 
 **CLI tool for API key and JWT lifecycle management — generate, store, verify, rotate, and revoke keys with an encrypted local keystore.**
 
+> ⭐ **Star this repo** if you manage API credentials — it helps other devs find APIAuth!
+
 [![CI](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/ci.yml/badge.svg)](https://github.com/Coding-Dev-Tools/apiauth/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
 [![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
 [![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
-[![Awesome Python](https://img.shields.io/badge/Awesome_Python-%E2%87%92-blue?logo=python)](https://github.com/uhub/awesome-python)
 
-**Why APIAuth?** API keys and JWTs scattered across .env files, CI secrets, and Slack messages is a security incident waiting to happen. APIAuth gives you one encrypted local keystore for every key — generate, verify, rotate, and revoke from the CLI. No more searching through 1Password or copy-pasting tokens from Slack. One `apiauth list` shows every key, its expiry, and whether it's been revoked. One `apiauth rotate` replaces a compromised key and hashes out the old one.
-
-## Quick Start
+## Installation
 
 ```bash
 pip install apiauth
