@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{name = "Revenue Holdings"}]
-urls = {Homepage = "https://github.com/Coding-Dev-Tools/apiauth", Repository = "https://github.com/Coding-Dev-Tools/apiauth"}
+
 keywords = ["api-keys", "jwt", "auth", "cli", "security", "key-management"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -30,6 +30,13 @@ dependencies = [
     "rich>=13.0.0",
     "python-dateutil>=2.8.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Coding-Dev-Tools/apiauth"
+Documentation = "https://github.com/Coding-Dev-Tools/apiauth#readme"
+Repository = "https://github.com/Coding-Dev-Tools/apiauth"
+Issues = "https://github.com/Coding-Dev-Tools/apiauth/issues"
+Changelog = "https://github.com/Coding-Dev-Tools/apiauth/releases"
 
 [project.optional-dependencies]
 dev = [
