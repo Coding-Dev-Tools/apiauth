@@ -17,8 +17,8 @@ from .verify import check_expiry, verify_api_key
 try:
     from revenueholdings_license import require_license
 except ImportError:
-    def require_license(tool):
-        def decorator(func):
+    def require_license(tool) -> Any:
+        def decorator(func) -> Any:
             return func
         return decorator
 
