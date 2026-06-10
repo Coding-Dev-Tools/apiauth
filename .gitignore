@@ -18,8 +18,3 @@ build/
 .DS_Store
 Thumbs.db
 .ruff_cache/
-
-# Local opencode config
-AGENTS.md
-.agents/
-

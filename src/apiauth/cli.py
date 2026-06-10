@@ -17,10 +17,13 @@ from .verify import check_expiry, verify_api_key
 try:
     from revenueholdings_license import require_license
 except ImportError:
+
     def require_license(tool):
         def decorator(func):
             return func
+
         return decorator
+
 
 console = Console()
 err_console = Console(stderr=True)
@@ -318,9 +321,7 @@ def import_key(
     now = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (
-            dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=expiry_days)
-        ).isoformat()[:23] + "Z"
+        expiry = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=expiry_days)).isoformat()[:23] + "Z"
 
     entry = {
         "type": "api_key",
@@ -415,18 +416,18 @@ def _export_github_actions(active: list[dict]) -> None:
     console.print("# GitHub Actions: Add these as repository secrets or use with actions/env")
     for k in active:
         prefix = _make_env_prefix(k)
-        console.print(f"echo \"{prefix}_ID={k['id']}\" >> $GITHUB_ENV")
-        console.print(f"echo \"{prefix}_SERVICE={k.get('service', '')}\" >> $GITHUB_ENV")
-        console.print(f"echo \"{prefix}_CREATED={k.get('created_at', '')}\" >> $GITHUB_ENV")
+        console.print(f'echo "{prefix}_ID={k["id"]}" >> $GITHUB_ENV')
+        console.print(f'echo "{prefix}_SERVICE={k.get("service", "")}" >> $GITHUB_ENV')
+        console.print(f'echo "{prefix}_CREATED={k.get("created_at", "")}" >> $GITHUB_ENV')
         if k.get("expires_at"):
-            console.print(f"echo \"{prefix}_EXPIRES={k['expires_at']}\" >> $GITHUB_ENV")
+            console.print(f'echo "{prefix}_EXPIRES={k["expires_at"]}" >> $GITHUB_ENV')
     console.print()
     console.print("# Or add to .github/workflows/*.yml env: block:")
     console.print("env:")
     for k in active:
         prefix = _make_env_prefix(k)
-        console.print(f"  {prefix}_ID: \"{k['id']}\"")
-        console.print(f"  {prefix}_SERVICE: \"{k.get('service', '')}\"")
+        console.print(f'  {prefix}_ID: "{k["id"]}"')
+        console.print(f'  {prefix}_SERVICE: "{k.get("service", "")}"')
 
 
 # ── audit ─────────────────────────────────────────────────────────────
@@ -473,9 +474,7 @@ def audit(ctx: click.Context) -> None:
         console.print(f"[yellow]⚠ {len(expiring)} EXPIRING key(s) (within 7 days):[/yellow]")
         for k in expiring:
             console.print(
-                f"  [yellow]{k['id']}[/yellow] "
-                f"{k.get('name', '')} — expires "
-                f"{_short_ts(k.get('expires_at', ''))}"
+                f"  [yellow]{k['id']}[/yellow] {k.get('name', '')} — expires {_short_ts(k.get('expires_at', ''))}"
             )
         console.print()
 
