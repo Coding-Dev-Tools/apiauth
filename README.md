@@ -11,13 +11,24 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
 [![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
 [![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
-[![PyPI](https://img.shields.io/pypi/v/apiauth)](https://pypi.org/project/apiauth/)
 
 ## Installation
 
+**pip (Python) — recommended.** APIAuth is published to the project's own package index (not yet on PyPI.org), so point pip at it:
 ```bash
-pip install apiauth
+pip install --index-url https://coding-dev-tools.github.io/pypi-index/simple/ apiauth
+```
 
+Prefer not to pass a flag every time? Install straight from the source repo — this always works and tracks the latest code:
+```bash
+pip install git+https://github.com/Coding-Dev-Tools/apiauth.git
+```
+
+Requires Python 3.10+ (pure Python, no compiled wheels). Public PyPI publishing is planned; **Homebrew & Scoop** are coming once the tap and bucket are published.
+
+## Quick Start
+
+```bash
 # Generate an API key
 apiauth generate api-key --name "My API Key" --service "api-gateway" --expiry-days 90
 
