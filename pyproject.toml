@@ -13,8 +13,8 @@ authors = [{name = "Revenue Holdings", email = "engineering@revenueholdings.dev"
 
 keywords = ["api-keys", "jwt", "auth", "cli", "security", "key-management"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
+ "Development Status :: 4 - Beta",
+ "Intended Audience :: Developers",
     "Topic :: Security :: Cryptography",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
@@ -53,6 +53,9 @@ apiauth = "apiauth.cli:cli"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

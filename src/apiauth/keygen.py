@@ -109,7 +109,7 @@ def create_jwt_entry(
     import jwt as pyjwt
     token = pyjwt.encode(payload, signing_secret, algorithm="HS256")
 
-    now = _timestamp()
+    now_str = _timestamp()
     expiry = None
     if expiry_days:
         expiry = (
@@ -121,7 +121,7 @@ def create_jwt_entry(
         "name": name,
         "service": service,
         "signing_secret_hash": hashlib.sha256(signing_secret.encode()).hexdigest(),
-        "created_at": now,
+        "created_at": now_str,
         "last_used": None,
         "expires_at": expiry,
         "revoked": False,
