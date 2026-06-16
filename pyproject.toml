@@ -28,7 +28,6 @@ dependencies = [
     "cryptography>=46.0.6",
     "pyjwt>=2.12.0",
     "rich>=13.0.0",
-    "python-dateutil>=2.8.0",
 ]
 
 [project.urls]
@@ -39,6 +38,12 @@ Issues = "https://github.com/Coding-Dev-Tools/apiauth/issues"
 Changelog = "https://github.com/Coding-Dev-Tools/apiauth/releases"
 
 [project.optional-dependencies]
+# Optional paywall gating (Model-B license). The tool runs without it
+# (require_license no-ops on ImportError); install to enable Free/Pro
+# tiers:  pip install apiauth[license]
+license = [
+    "revenueholdings_license @ git+https://github.com/Coding-Dev-Tools/revenueholdings_license.git",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
