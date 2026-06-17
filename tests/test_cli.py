@@ -24,7 +24,6 @@ from apiauth.verify import check_expiry
 def runner():
     """Provide a Click CliRunner."""
     from click.testing import CliRunner
-
     return CliRunner()
 
 
@@ -140,7 +139,9 @@ class TestCreateJWT:
         assert result["token"].count(".") == 2  # JWT has 3 parts
 
     def test_custom_claims(self, tmp_keystore):
-        result = create_jwt_entry(tmp_keystore, "Claims", "api", claims={"role": "admin", "scope": "read:users"})
+        result = create_jwt_entry(
+            tmp_keystore, "Claims", "api", claims={"role": "admin", "scope": "read:users"}
+        )
         stored = tmp_keystore.get(result["id"])
         assert stored["claims"]["role"] == "admin"
         assert stored["claims"]["scope"] == "read:users"
@@ -273,10 +274,17 @@ class TestCheckExpiry:
 
     def test_expiring_soon(self):
         import datetime
-
         soon = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).isoformat()[:23] + "Z"
         result = check_expiry({"expires_at": soon})
         assert result == "expiring"
+
+    def test_malformed_date_returns_none(self):
+        """Malformed expiry strings should not crash — return None gracefully."""
+        assert check_expiry({"expires_at": "not-a-date"}) is None
+
+    def test_non_string_expiry_returns_none(self):
+        """Non-string expiry values (e.g. int) should return None gracefully."""
+        assert check_expiry({"expires_at": 12345}) is None
 
 
 class TestCLIIntegration:
@@ -299,18 +307,8 @@ class TestCLIIntegration:
     def test_generate_api_key(self, runner, tmp_keystore):
         result = runner.invoke(
             cli,
-            [
-                "--key-dir",
-                str(tmp_keystore.key_dir),
-                "generate",
-                "api-key",
-                "--name",
-                "TestKey",
-                "--service",
-                "api-gateway",
-                "--expiry-days",
-                "90",
-            ],
+            ["--key-dir", str(tmp_keystore.key_dir), "generate", "api-key",
+             "--name", "TestKey", "--service", "api-gateway", "--expiry-days", "90"],
         )
         assert result.exit_code == 0
         assert "TestKey" in result.output
@@ -320,18 +318,8 @@ class TestCLIIntegration:
     def test_generate_jwt(self, runner, tmp_keystore):
         result = runner.invoke(
             cli,
-            [
-                "--key-dir",
-                str(tmp_keystore.key_dir),
-                "generate",
-                "jwt",
-                "--name",
-                "MyJWT",
-                "--service",
-                "auth",
-                "--expiry-days",
-                "30",
-            ],
+            ["--key-dir", str(tmp_keystore.key_dir), "generate", "jwt",
+             "--name", "MyJWT", "--service", "auth", "--expiry-days", "30"],
         )
         assert result.exit_code == 0
         assert "MyJWT" in result.output
@@ -350,7 +338,9 @@ class TestCLIIntegration:
         create_api_key_entry(tmp_keystore, "Key1", "svc1")
         create_api_key_entry(tmp_keystore, "Key2", "svc2")
 
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "list", "--service", "svc1"])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "list", "--service", "svc1"]
+        )
         assert result.exit_code == 0
         assert "Key1" in result.output
         assert "Key2" not in result.output
@@ -379,7 +369,9 @@ class TestCLIIntegration:
         entry = create_api_key_entry(tmp_keystore, "RotateMe", "api")
         key_id = entry["id"]
 
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "rotate", key_id])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "rotate", key_id]
+        )
         assert result.exit_code == 0
         assert "Rotated" in result.output or "v2" in result.output or "New" in result.output
 
@@ -387,7 +379,9 @@ class TestCLIIntegration:
         entry = create_api_key_entry(tmp_keystore, "RevokeMe", "api")
         key_id = entry["id"]
 
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "revoke", key_id])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "revoke", key_id]
+        )
         assert result.exit_code == 0
         assert "Revoked" in result.output
 
@@ -415,17 +409,8 @@ class TestCLIIntegration:
 
     def test_import_key(self, runner, tmp_keystore):
         result = runner.invoke(
-            cli,
-            [
-                "--key-dir",
-                str(tmp_keystore.key_dir),
-                "import",
-                "ak_myimportedkey123",
-                "--name",
-                "Imported",
-                "--service",
-                "api",
-            ],
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "import", "ak_myimportedkey123",
+             "--name", "Imported", "--service", "api"]
         )
         assert result.exit_code == 0
         assert "Imported" in result.output
@@ -433,7 +418,8 @@ class TestCLIIntegration:
     def test_import_key_stores_hash(self, runner, tmp_keystore):
         api_key = "ak_testimportkey123abc"
         result = runner.invoke(
-            cli, ["--key-dir", str(tmp_keystore.key_dir), "import", api_key, "--name", "HashTest", "--service", "api"]
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "import", api_key,
+             "--name", "HashTest", "--service", "api"]
         )
         assert result.exit_code == 0
 
@@ -445,26 +431,34 @@ class TestCLIIntegration:
 
     def test_export_env(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "ExportKey", "api-gateway")
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "env"])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "env"]
+        )
         assert result.exit_code == 0
         assert "export" in result.output
 
     def test_export_dotenv(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "DotenvKey", "api")
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "dotenv"])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "dotenv"]
+        )
         assert result.exit_code == 0
         assert "export" not in result.output  # dotenv has no export prefix
         assert "DOTENVKEY" in result.output
 
     def test_export_github_actions(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "GHKey", "api")
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "github-actions"])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "github-actions"]
+        )
         assert result.exit_code == 0
         assert "GITHUB_ENV" in result.output
 
     def test_export_json(self, runner, tmp_keystore):
         create_api_key_entry(tmp_keystore, "JsonExport", "api")
-        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "json"])
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "export", "--format", "json"]
+        )
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert isinstance(data, list)

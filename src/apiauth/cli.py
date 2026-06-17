@@ -17,13 +17,10 @@ from .verify import check_expiry, verify_api_key
 try:
     from revenueholdings_license import require_license
 except ImportError:
-
-    def require_license(tool):
-        def decorator(func):
+    def require_license(tool) -> Any:
+        def decorator(func) -> Any:
             return func
-
         return decorator
-
 
 console = Console()
 err_console = Console(stderr=True)
@@ -116,12 +113,12 @@ def generate_jwt_cmd(
 # ── list ──────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.option("--service", "-s", default=None, help="Filter by service")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.option("--show-expired", is_flag=True, help="Include expired keys")
 @click.pass_context
-def list(ctx: click.Context, service: str | None, json_output: bool, show_expired: bool) -> None:
+def list_keys(ctx: click.Context, service: str | None, json_output: bool, show_expired: bool) -> None:
     """List stored keys and JWTs."""
     ks: Keystore = ctx.obj["keystore"]
     keys = ks.list_keys(service)
@@ -179,7 +176,7 @@ def list(ctx: click.Context, service: str | None, json_output: bool, show_expire
 # ── show ──────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.argument("key_id")
 @click.pass_context
 def show(ctx: click.Context, key_id: str) -> None:
@@ -202,7 +199,7 @@ def show(ctx: click.Context, key_id: str) -> None:
 # ── rotate ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.argument("key_id")
 @click.option("--expiry-days", "-e", type=int, default=None, help="New expiry in days")
 @click.pass_context
@@ -233,7 +230,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
 # ── revoke ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.argument("key_id")
 @click.pass_context
 def revoke(ctx: click.Context, key_id: str) -> None:
@@ -252,7 +249,7 @@ def revoke(ctx: click.Context, key_id: str) -> None:
 # ── verify ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.argument("api_key")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.pass_context
@@ -321,7 +318,9 @@ def import_key(
     now = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=expiry_days)).isoformat()[:23] + "Z"
+        expiry = (
+            dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=expiry_days)
+        ).isoformat()[:23] + "Z"
 
     entry = {
         "type": "api_key",
@@ -348,7 +347,7 @@ def import_key(
 # ── export ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.option("--format", "-f", "fmt", type=click.Choice(["env", "json", "dotenv", "github-actions"]), default="env")
 @click.option("--service", "-s", default=None, help="Filter by service")
 @click.pass_context
@@ -416,24 +415,24 @@ def _export_github_actions(active: list[dict]) -> None:
     console.print("# GitHub Actions: Add these as repository secrets or use with actions/env")
     for k in active:
         prefix = _make_env_prefix(k)
-        console.print(f'echo "{prefix}_ID={k["id"]}" >> $GITHUB_ENV')
-        console.print(f'echo "{prefix}_SERVICE={k.get("service", "")}" >> $GITHUB_ENV')
-        console.print(f'echo "{prefix}_CREATED={k.get("created_at", "")}" >> $GITHUB_ENV')
+        console.print(f"echo \"{prefix}_ID={k['id']}\" >> $GITHUB_ENV")
+        console.print(f"echo \"{prefix}_SERVICE={k.get('service', '')}\" >> $GITHUB_ENV")
+        console.print(f"echo \"{prefix}_CREATED={k.get('created_at', '')}\" >> $GITHUB_ENV")
         if k.get("expires_at"):
-            console.print(f'echo "{prefix}_EXPIRES={k["expires_at"]}" >> $GITHUB_ENV')
+            console.print(f"echo \"{prefix}_EXPIRES={k['expires_at']}\" >> $GITHUB_ENV")
     console.print()
     console.print("# Or add to .github/workflows/*.yml env: block:")
     console.print("env:")
     for k in active:
         prefix = _make_env_prefix(k)
-        console.print(f'  {prefix}_ID: "{k["id"]}"')
-        console.print(f'  {prefix}_SERVICE: "{k.get("service", "")}"')
+        console.print(f"  {prefix}_ID: \"{k['id']}\"")
+        console.print(f"  {prefix}_SERVICE: \"{k.get('service', '')}\"")
 
 
 # ── audit ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.pass_context
 def audit(ctx: click.Context) -> None:
     """Audit keystore: find expired, expiring, and revoked keys."""
@@ -474,7 +473,9 @@ def audit(ctx: click.Context) -> None:
         console.print(f"[yellow]⚠ {len(expiring)} EXPIRING key(s) (within 7 days):[/yellow]")
         for k in expiring:
             console.print(
-                f"  [yellow]{k['id']}[/yellow] {k.get('name', '')} — expires {_short_ts(k.get('expires_at', ''))}"
+                f"  [yellow]{k['id']}[/yellow] "
+                f"{k.get('name', '')} — expires "
+                f"{_short_ts(k.get('expires_at', ''))}"
             )
         console.print()
 
@@ -490,7 +491,7 @@ def audit(ctx: click.Context) -> None:
 # ── stats ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="list")
 @click.pass_context
 def stats(ctx: click.Context) -> None:
     """Show keystore statistics."""
