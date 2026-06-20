@@ -109,7 +109,7 @@ def create_jwt_entry(
     import jwt as pyjwt
     token = pyjwt.encode(payload, signing_secret, algorithm="HS256")
 
-    now = _timestamp()
+    now_str = _timestamp()
     expiry = None
     if expiry_days:
         expiry = (
@@ -121,7 +121,7 @@ def create_jwt_entry(
         "name": name,
         "service": service,
         "signing_secret_hash": hashlib.sha256(signing_secret.encode()).hexdigest(),
-        "created_at": now,
+        "created_at": now_str,
         "last_used": None,
         "expires_at": expiry,
         "revoked": False,
@@ -182,6 +182,7 @@ def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
     Returns the entry metadata if the key hash matches and key is not revoked.
     """
     key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    now = datetime.datetime.now(UTC)
     for kid, entry in keystore.get_all().items():
         if entry.get("type") != "api_key":
             continue
@@ -190,10 +191,9 @@ def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
                 return {"id": kid, "status": "revoked", **entry}
             # Check expiry
             if entry.get("expires_at"):
-                from datetime import datetime
                 try:
-                    exp = datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
-                    if datetime.now(UTC) > exp:
+                    exp = datetime.datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
+                    if now > exp:
                         return {"id": kid, "status": "expired", **entry}
                 except (ValueError, TypeError):
                     pass
@@ -227,10 +227,9 @@ def verify_jwt_token(keystore: Keystore, token: str) -> dict | None:
 
     # Check expiry
     if entry.get("expires_at"):
-        from datetime import datetime
         try:
-            exp = datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
-            if datetime.now(UTC) > exp:
+            exp = datetime.datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
+            if datetime.datetime.now(UTC) > exp:
                 return {"id": jti, "status": "expired", **entry}
         except (ValueError, TypeError):
             pass

@@ -278,6 +278,14 @@ class TestCheckExpiry:
         result = check_expiry({"expires_at": soon})
         assert result == "expiring"
 
+    def test_malformed_date_returns_none(self):
+        """Malformed expiry strings should not crash — return None gracefully."""
+        assert check_expiry({"expires_at": "not-a-date"}) is None
+
+    def test_non_string_expiry_returns_none(self):
+        """Non-string expiry values (e.g. int) should return None gracefully."""
+        assert check_expiry({"expires_at": 12345}) is None
+
 
 class TestCLIIntegration:
     """Test CLI commands via Click CliRunner."""
