@@ -9,6 +9,14 @@ from rich.console import Console
 from rich.table import Table
 from typing import Any
 
+# Ensure UTF-8 output on Windows consoles that default to cp1252
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from . import __version__
 from .keygen import create_api_key_entry, create_jwt_entry, rotate_jwt, rotate_key, verify_jwt_token
 from .keystore import Keystore
@@ -176,7 +184,7 @@ def list(ctx: click.Context, service: str | None, json_output: bool, show_expire
 # ── show ──────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="show")
 @click.argument("key_id")
 @click.pass_context
 def show(ctx: click.Context, key_id: str) -> None:
@@ -199,7 +207,7 @@ def show(ctx: click.Context, key_id: str) -> None:
 # ── rotate ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="rotate")
 @click.argument("key_id")
 @click.option("--expiry-days", "-e", type=int, default=None, help="New expiry in days")
 @click.pass_context
@@ -230,7 +238,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
 # ── revoke ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="revoke")
 @click.argument("key_id")
 @click.pass_context
 def revoke(ctx: click.Context, key_id: str) -> None:
@@ -249,8 +257,8 @@ def revoke(ctx: click.Context, key_id: str) -> None:
 # ── verify ────────────────────────────────────────────────────────────
 
 
-@cli.command()
-@click.argument("token")
+@cli.command(name="verify")
+@click.argument("api_key")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.pass_context
 def verify(ctx: click.Context, token: str, json_output: bool) -> None:
@@ -359,7 +367,7 @@ def import_key(
 # ── export ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="export")
 @click.option("--format", "-f", "fmt", type=click.Choice(["env", "json", "dotenv", "github-actions"]), default="env")
 @click.option("--service", "-s", default=None, help="Filter by service")
 @click.pass_context
@@ -444,7 +452,7 @@ def _export_github_actions(active: list[dict]) -> None:
 # ── audit ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="audit")
 @click.option("--exit-on-expired", is_flag=True, help="Exit with code 1 if any keys are expired (for CI/CD)")
 @click.option("--exit-on-revoked", is_flag=True, help="Exit with code 1 if any keys are revoked")
 @click.pass_context
@@ -513,7 +521,7 @@ def audit(ctx: click.Context, exit_on_expired: bool, exit_on_revoked: bool) -> N
 # ── stats ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="stats")
 @click.pass_context
 def stats(ctx: click.Context) -> None:
     """Show keystore statistics."""
