@@ -22,3 +22,7 @@ Thumbs.db
 # Local opencode config
 .agents/
 
+# Temp files
+temp_*.txt
+*.tmp
+

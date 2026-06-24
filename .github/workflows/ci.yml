@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   test:
@@ -36,6 +37,19 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
+
+      - name: Security audit (pip-audit)
+        run: |
+          pip install pip-audit
+          pip-audit -r <(pip freeze) --format json --output pip-audit.json || true
+        continue-on-error: true
+
+      - name: Upload security audit
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: pip-audit.json
+          category: pip-audit
 
       - name: Check CLI works
         run: |
