@@ -261,7 +261,7 @@ def revoke(ctx: click.Context, key_id: str) -> None:
 @click.argument("api_key")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.pass_context
-def verify(ctx: click.Context, token: str, json_output: bool) -> None:
+def verify(ctx: click.Context, api_key: str, json_output: bool) -> None:
     """Verify an API key or JWT against the keystore.
 
     Auto-detects token type: strings with two dots (.) are treated as JWTs;
@@ -272,6 +272,7 @@ def verify(ctx: click.Context, token: str, json_output: bool) -> None:
     since the signing secret is not stored (only its hash is kept).
     """
     ks: Keystore = ctx.obj["keystore"]
+    token = api_key
 
     # Auto-detect JWT vs API key by structure (JWTs are three base64url segments)
     is_jwt = token.count(".") == 2
