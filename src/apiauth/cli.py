@@ -176,7 +176,7 @@ def list_keys(ctx: click.Context, service: str | None, json_output: bool, show_e
 # ── show ──────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="show")
 @click.argument("key_id")
 @click.pass_context
 def show(ctx: click.Context, key_id: str) -> None:
@@ -199,7 +199,7 @@ def show(ctx: click.Context, key_id: str) -> None:
 # ── rotate ────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="rotate")
 @click.argument("key_id")
 @click.option("--expiry-days", "-e", type=int, default=None, help="New expiry in days")
 @click.pass_context
@@ -230,7 +230,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
 # ── revoke ────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="revoke")
 @click.argument("key_id")
 @click.pass_context
 def revoke(ctx: click.Context, key_id: str) -> None:
@@ -249,7 +249,7 @@ def revoke(ctx: click.Context, key_id: str) -> None:
 # ── verify ────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="verify")
 @click.argument("api_key")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.pass_context
@@ -347,7 +347,7 @@ def import_key(
 # ── export ────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="export")
 @click.option("--format", "-f", "fmt", type=click.Choice(["env", "json", "dotenv", "github-actions"]), default="env")
 @click.option("--service", "-s", default=None, help="Filter by service")
 @click.pass_context
@@ -432,7 +432,7 @@ def _export_github_actions(active: list[dict]) -> None:
 # ── audit ─────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="audit")
 @click.pass_context
 def audit(ctx: click.Context) -> None:
     """Audit keystore: find expired, expiring, and revoked keys."""
@@ -491,7 +491,7 @@ def audit(ctx: click.Context) -> None:
 # ── stats ─────────────────────────────────────────────────────────────
 
 
-@cli.command(name="list")
+@cli.command(name="stats")
 @click.pass_context
 def stats(ctx: click.Context) -> None:
     """Show keystore statistics."""
