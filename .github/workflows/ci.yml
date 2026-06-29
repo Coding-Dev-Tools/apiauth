@@ -67,7 +67,7 @@ jobs:
         run: pip-audit -r requirements.txt || pip-audit --desc
 
       - name: Check for secrets
-        uses: trufflesecurity/trufflehog@34ed34b8e678b826e3e4a3d28426ac8bdfc4e1f2
+        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
         with:
           path: ./
           base: ""
