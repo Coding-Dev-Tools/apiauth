@@ -4,7 +4,7 @@
 CLI tool for API key and JWT lifecycle management with encrypted local store — generate, store, verify, rotate, and revoke keys with an encrypted local keystore.
 
 ## Build & Test Commands
-- Install: `pip install -e .` or `pip install apiauth`
+- Install: `pip install --index-url https://coding-dev-tools.github.io/pypi-index/simple/ apiauth` or `pip install git+https://github.com/Coding-Dev-Tools/apiauth.git`
 - Test: `pytest tests/` (or `python -m pytest tests/ -v --tb=short`)
 - Lint: `ruff check src/ --target-version py310`
 - Build: `pip wheel . --wheel-dir dist/`
