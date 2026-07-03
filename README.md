@@ -11,12 +11,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/Coding-Dev-Tools/apiauth/blob/main/LICENSE)
 [![Open Source Alternative](https://img.shields.io/badge/Open_Source_Alternative-%E2%87%92-blue?logo=opensourceinitiative)](https://www.opensourcealternative.to/project/apiauth)
 [![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
-[![PyPI](https://img.shields.io/pypi/v/apiauth)](https://pypi.org/project/apiauth/)
-
 ## Installation
-
 ```bash
-pip install apiauth
+pip install --index-url https://coding-dev-tools.github.io/pypi-index/simple/ apiauth
+# or: pip install git+https://github.com/Coding-Dev-Tools/apiauth.git
 
 # Generate an API key
 apiauth generate api-key --name "My API Key" --service "api-gateway" --expiry-days 90
@@ -216,4 +214,18 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <sub>Part of [Revenue Holdings](https://coding-dev-tools.github.io/revenueholdings.dev/) — a suite of 11 developer CLI tools built by autonomous AI agents. Also check out [API Contract Guardian](https://github.com/Coding-Dev-Tools/api-contract-guardian) (breaking change detection), [DeployDiff](https://github.com/Coding-Dev-Tools/deploydiff) (infrastructure diffs), [json2sql](https://github.com/Coding-Dev-Tools/json2sql) (JSON → SQL), [ConfigDrift](https://github.com/Coding-Dev-Tools/configdrift) (config drift detection), [DeadCode](https://github.com/Coding-Dev-Tools/deadcode) (dead code cleanup), [APIGhost](https://github.com/Coding-Dev-Tools/apighost) (mock API server), [Envault](https://github.com/Coding-Dev-Tools/envault) (env sync), [SchemaForge](https://github.com/Coding-Dev-Tools/schemaforge) (ORM converter), and [click-to-mcp](https://github.com/Coding-Dev-Tools/click-to-mcp) (CLI → MCP server).</sub>
+<<<<<<< Updated upstream
+=======
 
+## Install
+
+```bash
+pip install -e .
+```
+
+## Test
+
+```bash
+pytest -q
+```
+>>>>>>> Stashed changes
