@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 # Byte-compiled
 __pycache__/
 *.py[cod]
@@ -22,7 +21,6 @@ Thumbs.db
 
 # Local opencode config
 .agents/
-=======
 # Byte-compiled
 __pycache__/
 *.py[cod]
@@ -55,4 +53,3 @@ node_modules
 # Operational state (not for commit)
 LEARNING/
 _cowork_ops/
->>>>>>> Stashed changes
