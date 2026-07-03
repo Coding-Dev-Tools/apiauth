@@ -278,6 +278,14 @@ class TestCheckExpiry:
         result = check_expiry({"expires_at": soon})
         assert result == "expiring"
 
+    def test_malformed_date_returns_none(self):
+        """Malformed expiry strings should not crash — return None gracefully."""
+        assert check_expiry({"expires_at": "not-a-date"}) is None
+
+    def test_non_string_expiry_returns_none(self):
+        """Non-string expiry values (e.g. int) should return None gracefully."""
+        assert check_expiry({"expires_at": 12345}) is None
+
 
 class TestCLIIntegration:
     """Test CLI commands via Click CliRunner."""
@@ -485,3 +493,88 @@ class TestCLIIntegration:
         result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "stats"])
         assert result.exit_code == 0
         assert "Total keys" in result.output
+
+
+class TestVerifyJWTViaCLI:
+    """Verify command auto-dispatches to JWT path for dotted tokens."""
+
+    def test_verify_valid_jwt_via_cli(self, runner, tmp_keystore):
+        entry = create_jwt_entry(tmp_keystore, "CLIVerifyJWT", "auth")
+        token = entry["token"]
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", token])
+        assert result.exit_code == 0, result.output
+        assert "VALID" in result.output
+
+    def test_verify_revoked_jwt_via_cli(self, runner, tmp_keystore):
+        entry = create_jwt_entry(tmp_keystore, "CLIRevokeJWT", "auth")
+        e = tmp_keystore.get(entry["id"])
+        e["revoked"] = True
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", entry["token"]])
+        assert result.exit_code == 0
+        assert "REVOKED" in result.output
+
+    def test_verify_jwt_json_output(self, runner, tmp_keystore):
+        entry = create_jwt_entry(tmp_keystore, "CLIJsonJWT", "auth")
+        result = runner.invoke(
+            cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", "--json-output", entry["token"]]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "valid"
+
+    def test_verify_unknown_jwt_via_cli(self, runner, tmp_keystore):
+        # A well-formed JWT that doesn't exist in the keystore
+        import base64
+        header = base64.urlsafe_b64encode(b'{"alg":"HS256"}').rstrip(b"=").decode()
+        payload = base64.urlsafe_b64encode(b'{"jti":"nosuchid"}').rstrip(b"=").decode()
+        fake_jwt = f"{header}.{payload}.fakesig"
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "verify", fake_jwt])
+        assert result.exit_code == 0
+        assert "INVALID" in result.output
+
+
+class TestAuditExitCodes:
+    """--exit-on-expired and --exit-on-revoked must set exit code 1 for CI/CD use."""
+
+    def test_exit_on_expired_no_expired(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "Healthy", "api")
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit", "--exit-on-expired"])
+        assert result.exit_code == 0
+
+    def test_exit_on_expired_with_expired(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "Expired", "api")
+        e = tmp_keystore.get(entry["id"])
+        e["expires_at"] = "2020-01-01T00:00:00Z"
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit", "--exit-on-expired"])
+        assert result.exit_code == 1
+        assert "EXPIRED" in result.output
+
+    def test_exit_on_revoked_with_revoked(self, runner, tmp_keystore):
+        entry = create_api_key_entry(tmp_keystore, "Revoked", "api")
+        e = tmp_keystore.get(entry["id"])
+        e["revoked"] = True
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit", "--exit-on-revoked"])
+        assert result.exit_code == 1
+
+    def test_exit_on_revoked_no_revoked(self, runner, tmp_keystore):
+        create_api_key_entry(tmp_keystore, "Active", "api")
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit", "--exit-on-revoked"])
+        assert result.exit_code == 0
+
+    def test_exit_on_expired_not_set_exits_0_even_with_expired(self, runner, tmp_keystore):
+        """Without the flag, expired keys print but don't fail the process."""
+        entry = create_api_key_entry(tmp_keystore, "Expired2", "api")
+        e = tmp_keystore.get(entry["id"])
+        e["expires_at"] = "2020-01-01T00:00:00Z"
+        tmp_keystore.put(entry["id"], e)
+
+        result = runner.invoke(cli, ["--key-dir", str(tmp_keystore.key_dir), "audit"])
+        assert result.exit_code == 0
+        assert "EXPIRED" in result.output

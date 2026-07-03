@@ -9,8 +9,16 @@ from rich.console import Console
 from rich.table import Table
 from typing import Any
 
+# Ensure UTF-8 output on Windows consoles that default to cp1252
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from . import __version__
-from .keygen import create_api_key_entry, create_jwt_entry, rotate_jwt, rotate_key
+from .keygen import create_api_key_entry, create_jwt_entry, rotate_jwt, rotate_key, verify_jwt_token
 from .keystore import Keystore
 from .verify import check_expiry, verify_api_key
 
@@ -176,7 +184,7 @@ def list(ctx: click.Context, service: str | None, json_output: bool, show_expire
 # ── show ──────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="show")
 @click.argument("key_id")
 @click.pass_context
 def show(ctx: click.Context, key_id: str) -> None:
@@ -199,7 +207,7 @@ def show(ctx: click.Context, key_id: str) -> None:
 # ── rotate ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="rotate")
 @click.argument("key_id")
 @click.option("--expiry-days", "-e", type=int, default=None, help="New expiry in days")
 @click.pass_context
@@ -230,7 +238,7 @@ def rotate(ctx: click.Context, key_id: str, expiry_days: int | None) -> None:
 # ── revoke ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="revoke")
 @click.argument("key_id")
 @click.pass_context
 def revoke(ctx: click.Context, key_id: str) -> None:
@@ -249,37 +257,50 @@ def revoke(ctx: click.Context, key_id: str) -> None:
 # ── verify ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="verify")
 @click.argument("api_key")
 @click.option("--json-output", "-j", is_flag=True, help="Output as JSON")
 @click.pass_context
 def verify(ctx: click.Context, api_key: str, json_output: bool) -> None:
-    """Verify an API key against the keystore.
+    """Verify an API key or JWT against the keystore.
 
-    Checks if the key exists, is not revoked, and is not expired.
+    Auto-detects token type: strings with two dots (.) are treated as JWTs;
+    everything else is verified as an API key.
+
+    Checks if the token exists in the keystore, is not revoked, and is not expired.
+    Note: JWT verification is by JTI lookup only — signature is not re-verified
+    since the signing secret is not stored (only its hash is kept).
     """
     ks: Keystore = ctx.obj["keystore"]
-    result = verify_api_key(ks, api_key)
+    token = api_key
+
+    # Auto-detect JWT vs API key by structure (JWTs are three base64url segments)
+    is_jwt = token.count(".") == 2
+    result = verify_jwt_token(ks, token) if is_jwt else verify_api_key(ks, token)
 
     if json_output:
         console.print(json.dumps(result, indent=2, default=str))
         return
 
     if result is None:
-        console.print("[red]✗[/red] Key is [red]INVALID[/red]")
-        console.print("  Key not found in keystore")
+        kind = "JWT" if is_jwt else "Key"
+        console.print(f"[red]✗[/red] {kind} is [red]INVALID[/red]")
+        console.print("  Token not found in keystore")
         return
 
     status = result.get("status", "unknown")
+    kind = "JWT" if result.get("type") == "jwt" else "Key"
     if status == "valid":
-        console.print(f"[green]✓[/green] Key [bold]{result['id']}[/bold] is [green]VALID[/green]")
+        console.print(f"[green]✓[/green] {kind} [bold]{result['id']}[/bold] is [green]VALID[/green]")
         console.print(f"  Name: {result.get('name', '')}")
         console.print(f"  Service: {result.get('service', '')}")
         console.print(f"  Version: {result.get('version', '?')}")
         if result.get("rate_limit"):
             console.print(f"  Rate limit: {result['rate_limit']} req/s")
+        if result.get("type") == "jwt":
+            console.print("  [dim]Note: JWT lookup by JTI only; signature not re-verified.[/dim]")
     else:
-        console.print(f"[red]✗[/red] Key [bold]{result['id']}[/bold] is [red]{status.upper()}[/red]")
+        console.print(f"[red]✗[/red] {kind} [bold]{result['id']}[/bold] is [red]{status.upper()}[/red]")
 
 
 # ── import ────────────────────────────────────────────────────────────
@@ -347,7 +368,7 @@ def import_key(
 # ── export ────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="export")
 @click.option("--format", "-f", "fmt", type=click.Choice(["env", "json", "dotenv", "github-actions"]), default="env")
 @click.option("--service", "-s", default=None, help="Filter by service")
 @click.pass_context
@@ -432,10 +453,15 @@ def _export_github_actions(active: list[dict]) -> None:
 # ── audit ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="audit")
+@click.option("--exit-on-expired", is_flag=True, help="Exit with code 1 if any keys are expired (for CI/CD)")
+@click.option("--exit-on-revoked", is_flag=True, help="Exit with code 1 if any keys are revoked")
 @click.pass_context
-def audit(ctx: click.Context) -> None:
-    """Audit keystore: find expired, expiring, and revoked keys."""
+def audit(ctx: click.Context, exit_on_expired: bool, exit_on_revoked: bool) -> None:
+    """Audit keystore: find expired, expiring, and revoked keys.
+
+    Use --exit-on-expired in CI/CD pipelines to fail the build when keys have expired.
+    """
     ks: Keystore = ctx.obj["keystore"]
     keys = ks.list_keys()
 
@@ -487,11 +513,16 @@ def audit(ctx: click.Context) -> None:
 
     console.print(f"[green]✓ {len(healthy)} key(s) healthy[/green]")
 
+    if exit_on_expired and expired:
+        sys.exit(1)
+    if exit_on_revoked and revoked:
+        sys.exit(1)
+
 
 # ── stats ─────────────────────────────────────────────────────────────
 
 
-@cli.command()
+@cli.command(name="stats")
 @click.pass_context
 def stats(ctx: click.Context) -> None:
     """Show keystore statistics."""
