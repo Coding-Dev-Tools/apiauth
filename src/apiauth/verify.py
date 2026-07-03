@@ -10,7 +10,7 @@ UTC = datetime.timezone.utc
 from .keygen import verify_api_key, verify_jwt_token  # noqa: F401, E402
 
 
-def check_expiry(entry: dict) -> str | None:
+def check_expiry(entry: dict[str, object]) -> str | None:
     """Check if a key entry is expired or expiring soon.
 
     Returns:
