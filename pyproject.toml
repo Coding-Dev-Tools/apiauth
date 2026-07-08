@@ -9,7 +9,7 @@ description = "CLI tool for API key and JWT lifecycle management with encrypted 
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{name = "Revenue Holdings", email = "engineering@revenueholdings.dev"}]
+authors = [{name = "Coding-Dev-Tools", email = "engineering@revenueholdings.dev"}]
 
 keywords = ["api-keys", "jwt", "auth", "cli", "security", "key-management"]
 classifiers = [
