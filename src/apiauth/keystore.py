@@ -53,8 +53,16 @@ class Keystore:
             ciphertext = raw[12:]
             plaintext = self._aesgcm.decrypt(nonce, ciphertext, None)
             self._entries = json.loads(plaintext.decode("utf-8"))
-        except Exception:
-            self._entries = {}
+        except Exception as exc:
+            # Never silently fall back to an empty store: the next put()
+            # would re-encrypt and overwrite keys.json, permanently
+            # destroying every stored entry (e.g. after a wrong or
+            # regenerated master.key). Fail loudly instead.
+            raise RuntimeError(
+                f"Failed to decrypt keystore at {self._store_path}. "
+                "Refusing to continue so the existing store is not "
+                "overwritten. Check that master.key matches this store."
+            ) from exc
 
     def _save(self) -> None:
         plaintext = json.dumps(self._entries, indent=2, default=str).encode("utf-8")

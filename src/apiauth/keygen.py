@@ -32,7 +32,10 @@ def _generate_key_id() -> str:
 
 
 def _timestamp() -> str:
-    return datetime.datetime.now(UTC).isoformat()[:23] + "Z"
+    # timespec="milliseconds" guarantees a fixed-width fraction; plain
+    # isoformat() omits it when microsecond == 0, and slicing [:23] would
+    # then produce an unparseable "...+00:Z" timestamp.
+    return datetime.datetime.now(UTC).isoformat(timespec="milliseconds")[:23] + "Z"
 
 
 def create_api_key_entry(
@@ -55,7 +58,7 @@ def create_api_key_entry(
     if expiry_days:
         expiry = (
             datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat()[:23] + "Z"
+        ).isoformat(timespec="milliseconds")[:23] + "Z"
 
     entry = {
         "type": "api_key",
@@ -114,7 +117,7 @@ def create_jwt_entry(
     if expiry_days:
         expiry = (
             datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat()[:23] + "Z"
+        ).isoformat(timespec="milliseconds")[:23] + "Z"
 
     entry = {
         "type": "jwt",
@@ -156,7 +159,7 @@ def rotate_key(
     if expiry_days:
         expiry = (
             datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat()[:23] + "Z"
+        ).isoformat(timespec="milliseconds")[:23] + "Z"
 
     updated = dict(entry)
     updated["previous_hash"] = entry.get("key_hash")
@@ -264,7 +267,7 @@ def rotate_jwt(
     if expiry_days:
         expiry = (
             datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat()[:23] + "Z"
+        ).isoformat(timespec="milliseconds")[:23] + "Z"
 
     updated = dict(entry)
     updated["previous_hash"] = entry.get("signing_secret_hash")
