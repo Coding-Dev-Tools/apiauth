@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import hashlib
+import hmac
 import secrets
 import uuid
 
@@ -179,6 +180,26 @@ def rotate_key(
     }
 
 
+def _parse_expiry(exp_str: object) -> datetime.datetime | None:
+    """Parse a stored ``expires_at`` value into a timezone-aware UTC datetime.
+
+    Returns ``None`` when the value is missing or cannot be parsed. Naive
+    datetimes (no offset) are assumed to be UTC, so comparing them against an
+    aware ``now`` never raises ``TypeError``. Callers on the verification path
+    must treat a ``None`` result for a *present* ``expires_at`` as a failure
+    (fail closed) -- never as "valid".
+    """
+    if not isinstance(exp_str, str):
+        return None
+    try:
+        exp = datetime.datetime.fromisoformat(exp_str.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=UTC)
+    return exp
+
+
 def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
     """Verify a plaintext API key against the keystore.
 
@@ -189,17 +210,19 @@ def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
     for kid, entry in keystore.get_all().items():
         if entry.get("type") != "api_key":
             continue
-        if entry.get("key_hash") == key_hash:
+        stored_hash = entry.get("key_hash")
+        if isinstance(stored_hash, str) and hmac.compare_digest(stored_hash, key_hash):
             if entry.get("revoked"):
                 return {"id": kid, "status": "revoked", **entry}
-            # Check expiry
+            # Check expiry. A present-but-unparseable expires_at must fail
+            # CLOSED: returning "valid" here would let a corrupted, naive, or
+            # tampered timestamp bypass expiry entirely (silent fail-open).
             if entry.get("expires_at"):
-                try:
-                    exp = datetime.datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
-                    if now > exp:
-                        return {"id": kid, "status": "expired", **entry}
-                except (ValueError, TypeError):
-                    pass
+                exp = _parse_expiry(entry["expires_at"])
+                if exp is None:
+                    return {"id": kid, "status": "invalid", **entry}
+                if now > exp:
+                    return {"id": kid, "status": "expired", **entry}
             return {"id": kid, "status": "valid", **entry}
     return None
 
@@ -228,14 +251,14 @@ def verify_jwt_token(keystore: Keystore, token: str) -> dict | None:
     if entry.get("revoked"):
         return {"id": jti, "status": "revoked", **entry}
 
-    # Check expiry
+    # Check expiry. A present-but-unparseable expires_at fails CLOSED
+    # (status "invalid") rather than silently reporting the JWT as valid.
     if entry.get("expires_at"):
-        try:
-            exp = datetime.datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
-            if datetime.datetime.now(UTC) > exp:
-                return {"id": jti, "status": "expired", **entry}
-        except (ValueError, TypeError):
-            pass
+        exp = _parse_expiry(entry["expires_at"])
+        if exp is None:
+            return {"id": jti, "status": "invalid", **entry}
+        if datetime.datetime.now(UTC) > exp:
+            return {"id": jti, "status": "expired", **entry}
 
     return {"id": jti, "status": "valid", **entry}
 
