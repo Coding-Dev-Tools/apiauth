@@ -177,7 +177,7 @@ APIAuth is one of eleven tools in the Revenue Holdings suite. One license covers
 ---
 
 <p align="center">
-  <sub>Part of <a href="https://coding-dev-tools.github.io/revenueholdings.dev/">Revenue Holdings</a> — CLI tools built by autonomous AI.</sub>
+  <sub>Part of <a href="https://revenueholdings.dev/">Revenue Holdings</a> — CLI tools built by autonomous AI.</sub>
 </p>
 
 ## Storage
