@@ -13,8 +13,7 @@
 [![LibHunt](https://img.shields.io/badge/LibHunt-%E2%87%92-blue?logo=codeigniter)](https://www.libhunt.com/r/Coding-Dev-Tools/apiauth)
 ## Installation
 ```bash
-pip install --index-url https://coding-dev-tools.github.io/pypi-index/simple/ apiauth
-# or: pip install git+https://github.com/Coding-Dev-Tools/apiauth.git
+pip install git+https://github.com/Coding-Dev-Tools/apiauth.git
 
 # Generate an API key
 apiauth generate api-key --name "My API Key" --service "api-gateway" --expiry-days 90
