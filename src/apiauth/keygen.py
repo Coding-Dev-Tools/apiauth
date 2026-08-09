@@ -25,6 +25,7 @@ def generate_api_key(prefix: str = "ak", byte_length: int = 32) -> str:
 
 def _base64url_no_pad(data: bytes) -> str:
     import base64
+
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
@@ -57,9 +58,9 @@ def create_api_key_entry(
     now = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (
-            datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat(timespec="milliseconds")[:23] + "Z"
+        expiry = (datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)).isoformat(timespec="milliseconds")[
+            :23
+        ] + "Z"
 
     entry = {
         "type": "api_key",
@@ -111,14 +112,15 @@ def create_jwt_entry(
 
     # Create the JWT
     import jwt as pyjwt
+
     token = pyjwt.encode(payload, signing_secret, algorithm="HS256")
 
     now_str = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (
-            datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat(timespec="milliseconds")[:23] + "Z"
+        expiry = (datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)).isoformat(timespec="milliseconds")[
+            :23
+        ] + "Z"
 
     entry = {
         "type": "jwt",
@@ -158,9 +160,9 @@ def rotate_key(
     now = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (
-            datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat(timespec="milliseconds")[:23] + "Z"
+        expiry = (datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)).isoformat(timespec="milliseconds")[
+            :23
+        ] + "Z"
 
     updated = dict(entry)
     updated["previous_hash"] = entry.get("key_hash")
@@ -288,9 +290,9 @@ def rotate_jwt(
     now = _timestamp()
     expiry = None
     if expiry_days:
-        expiry = (
-            datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)
-        ).isoformat(timespec="milliseconds")[:23] + "Z"
+        expiry = (datetime.datetime.now(UTC) + datetime.timedelta(days=expiry_days)).isoformat(timespec="milliseconds")[
+            :23
+        ] + "Z"
 
     updated = dict(entry)
     updated["previous_hash"] = entry.get("signing_secret_hash")
