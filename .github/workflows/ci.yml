@@ -72,6 +72,7 @@ jobs:
           path: ./
           base: ""
           head: ${{ github.sha }}
+          extra_args: --exclude-paths=.trufflehogignore
 
   build:
     runs-on: ubuntu-latest
