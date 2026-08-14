@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -65,11 +66,27 @@ class Keystore:
             ) from exc
 
     def _save(self) -> None:
+        """Atomically write the keystore to disk.
+
+        Uses a temp file + os.replace so that a crash or disk-full mid-write
+        never truncates the existing store. The previous file remains intact
+        until the replacement is fully written.
+        """
         plaintext = json.dumps(self._entries, indent=2, default=str).encode("utf-8")
         nonce = os.urandom(12)
         ciphertext = self._aesgcm.encrypt(nonce, plaintext, None)
-        self._store_path.write_bytes(nonce + ciphertext)
-        os.chmod(str(self._store_path), 0o600)
+        data = nonce + ciphertext
+
+        tmp_path = self._store_path.with_suffix(self._store_path.suffix + ".tmp")
+        try:
+            tmp_path.write_bytes(data)
+            os.chmod(str(tmp_path), 0o600)
+            os.replace(str(tmp_path), str(self._store_path))
+        except BaseException:
+            # Clean up the temp file on any failure so we don't leak .tmp files.
+            with contextlib.suppress(OSError):
+                tmp_path.unlink(missing_ok=True)
+            raise
 
     def get_all(self) -> dict[str, dict[str, Any]]:
         """Return all stored entries."""
