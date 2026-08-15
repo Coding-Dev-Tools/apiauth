@@ -47,7 +47,6 @@ def test_keystore_survives_truncating_write_failure(tmp_path: Path) -> None:
     entries = ks3.get_all()
 
     assert "original-key" in entries, (
-        "Original key was lost! Implementation is not atomic. "
-        "Use temp file + os.replace for crash-safe writes."
+        "Original key was lost! Implementation is not atomic. Use temp file + os.replace for crash-safe writes."
     )
     assert entries["original-key"]["value"] == "original-value"

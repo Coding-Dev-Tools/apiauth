@@ -30,3 +30,5 @@ node_modules
 # Operational state (not for commit)
 LEARNING/
 _cowork_ops/
+# Windows reserved device name artifact
+nul
