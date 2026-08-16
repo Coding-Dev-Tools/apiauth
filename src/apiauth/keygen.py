@@ -126,6 +126,7 @@ def create_jwt_entry(
         "type": "jwt",
         "name": name,
         "service": service,
+        "signing_secret": signing_secret,
         "signing_secret_hash": hashlib.sha256(signing_secret.encode()).hexdigest(),
         "created_at": now_str,
         "last_used": None,
@@ -232,12 +233,14 @@ def verify_api_key(keystore: Keystore, api_key: str) -> dict | None:
 def verify_jwt_token(keystore: Keystore, token: str) -> dict | None:
     """Verify a JWT token by decoding it and matching the jti to the keystore.
 
-    Returns entry metadata if the JWT jti matches and key is not revoked.
+    Verifies the cryptographic signature against the stored signing secret.
+    Returns entry metadata if the JWT jti matches, signature is valid, and
+    key is not revoked.
     """
     import jwt as pyjwt
 
     try:
-        # Decode without verification first to get the jti
+        # Decode without verification first to get the jti for lookup
         unverified = pyjwt.decode(token, options={"verify_signature": False, "verify_exp": False})
         jti = unverified.get("jti")
     except Exception:
@@ -253,8 +256,21 @@ def verify_jwt_token(keystore: Keystore, token: str) -> dict | None:
     if entry.get("revoked"):
         return {"id": jti, "status": "revoked", **entry}
 
-    # Check expiry. A present-but-unparseable expires_at fails CLOSED
-    # (status "invalid") rather than silently reporting the JWT as valid.
+    # Verify the signature using the stored signing secret.
+    # Without this check, an attacker who knows the jti could forge tokens.
+    signing_secret = entry.get("signing_secret")
+    if not signing_secret:
+        # Legacy entry without stored secret — fail closed
+        return {"id": jti, "status": "invalid", **entry}
+
+    try:
+        pyjwt.decode(token, signing_secret, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
+        return {"id": jti, "status": "expired", **entry}
+    except pyjwt.InvalidTokenError:
+        return {"id": jti, "status": "invalid", **entry}
+
+    # Check our recorded expiry as well (belt and suspenders)
     if entry.get("expires_at"):
         exp = _parse_expiry(entry["expires_at"])
         if exp is None:
@@ -296,6 +312,7 @@ def rotate_jwt(
 
     updated = dict(entry)
     updated["previous_hash"] = entry.get("signing_secret_hash")
+    updated["signing_secret"] = signing_secret
     updated["signing_secret_hash"] = hashlib.sha256(signing_secret.encode()).hexdigest()
     updated["version"] = entry.get("version", 1) + 1
     updated["rotated_at"] = now
