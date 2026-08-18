@@ -271,8 +271,8 @@ def verify(ctx: click.Context, api_key: str, json_output: bool) -> None:
     everything else is verified as an API key.
 
     Checks if the token exists in the keystore, is not revoked, and is not expired.
-    Note: JWT verification is by JTI lookup only — signature is not re-verified
-    since the signing secret is not stored (only its hash is kept).
+    JWTs are verified by JTI lookup AND HMAC-SHA256 signature check against the
+    stored signing secret. API keys are verified by SHA-256 hash comparison.
     """
     ks: Keystore = ctx.obj["keystore"]
     token = api_key
@@ -301,7 +301,7 @@ def verify(ctx: click.Context, api_key: str, json_output: bool) -> None:
         if result.get("rate_limit"):
             console.print(f"  Rate limit: {result['rate_limit']} req/s")
         if result.get("type") == "jwt":
-            console.print("  [dim]Note: JWT lookup by JTI only; signature not re-verified.[/dim]")
+            console.print("  [dim]Note: JWT signature verified via HMAC-SHA256.[/dim]")
     else:
         console.print(f"[red]✗[/red] {kind} [bold]{result['id']}[/bold] is [red]{status.upper()}[/red]")
 
