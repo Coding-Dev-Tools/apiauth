@@ -78,9 +78,7 @@ def test_verify_jwt_rejects_tampered_claims(tmp_keystore):
     )
 
     # Decode the legitimate token to get its structure
-    decoded = pyjwt.decode(
-        result["token"], options={"verify_signature": False}
-    )
+    decoded = pyjwt.decode(result["token"], options={"verify_signature": False})
 
     # Tamper with the subject claim
     decoded["sub"] = "service:admin:elevated-privilege"
@@ -90,6 +88,4 @@ def test_verify_jwt_rejects_tampered_claims(tmp_keystore):
 
     v = verify_jwt_token(tmp_keystore, tampered_token)
     assert v is not None
-    assert v["status"] != "valid", (
-        "Tampered JWT was accepted as valid — signature verification missing"
-    )
+    assert v["status"] != "valid", "Tampered JWT was accepted as valid — signature verification missing"
