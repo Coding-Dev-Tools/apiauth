@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -100,10 +101,8 @@ class Keystore:
             os.chmod(tmp_path, 0o600)
             os.replace(tmp_path, str(self._store_path))
         except BaseException:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
-            except OSError:
-                pass
             raise
 
     def get_all(self) -> dict[str, dict[str, Any]]:
