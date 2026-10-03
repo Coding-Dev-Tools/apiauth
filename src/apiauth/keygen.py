@@ -151,6 +151,15 @@ def rotate_key(
     entry = keystore.get(key_id)
     if entry is None:
         return None
+    if entry.get("type") != "api_key":
+        # Refuse to corrupt a differently-typed entry: running the API-key
+        # rotation path over a JWT entry used to overwrite key_hash/prefix,
+        # bump version, and leave signing_secret_hash stale -- silently
+        # producing a half-migrated entry that neither verifier trusts.
+        raise ValueError(
+            f"rotate_key() requires an 'api_key' entry, got type={entry.get('type')!r} "
+            f"(key_id={key_id!r}); use rotate_jwt() for JWT entries"
+        )
 
     new_api_key = generate_api_key()
     new_hash = hashlib.sha256(new_api_key.encode()).hexdigest()
@@ -272,6 +281,11 @@ def rotate_jwt(
     entry = keystore.get(key_id)
     if entry is None:
         return None
+    if entry.get("type") != "jwt":
+        raise ValueError(
+            f"rotate_jwt() requires a 'jwt' entry, got type={entry.get('type')!r} "
+            f"(key_id={key_id!r}); use rotate_key() for API-key entries"
+        )
 
     signing_secret = secrets.token_hex(32)
     import jwt as pyjwt

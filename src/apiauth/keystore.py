@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import tempfile
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pathlib import Path
 from typing import Any
@@ -18,7 +20,19 @@ def _get_or_create_master_key(key_dir: Path) -> bytes:
     """Load existing master key or generate a new one."""
     key_path = key_dir / _KEY_FILE
     if key_path.exists():
-        return key_path.read_bytes()
+        key = key_path.read_bytes()
+        if len(key) != 32:
+            # A truncated or otherwise malformed master.key would otherwise
+            # surface as an opaque cryptography error (or worse, get silently
+            # regenerated below, bricking every existing entry). Fail loudly
+            # instead so the real master key can be restored.
+            raise RuntimeError(
+                f"Master key at {key_path} is corrupt: expected 32 bytes, "
+                f"got {len(key)}. Refusing to regenerate it, which would make "
+                "every existing keystore entry undecryptable. Restore the "
+                "original master.key from backup."
+            )
+        return key
 
     key_dir.mkdir(parents=True, exist_ok=True)
     key = AESGCM.generate_key(bit_length=256)
@@ -65,11 +79,31 @@ class Keystore:
             ) from exc
 
     def _save(self) -> None:
+        """Persist the store atomically.
+
+        Writing keys.json in place meant a crash mid-write could leave a torn
+        ciphertext behind -- and since _load() refuses to continue on decrypt
+        failure (by design), that tear would brick the whole keystore. Write
+        to a temp file in the same directory, fsync, then os.replace() so
+        readers only ever see a fully-written store.
+        """
         plaintext = json.dumps(self._entries, indent=2, default=str).encode("utf-8")
         nonce = os.urandom(12)
         ciphertext = self._aesgcm.encrypt(nonce, plaintext, None)
-        self._store_path.write_bytes(nonce + ciphertext)
-        os.chmod(str(self._store_path), 0o600)
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(self.key_dir), prefix=".keys-", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(nonce + ciphertext)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.chmod(tmp_path, 0o600)
+            os.replace(tmp_path, str(self._store_path))
+        except BaseException:
+            with contextlib.suppress(OSError):
+                os.unlink(tmp_path)
+            raise
 
     def get_all(self) -> dict[str, dict[str, Any]]:
         """Return all stored entries."""
